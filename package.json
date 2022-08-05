@@ -1,8 +1,9 @@
 {
   "name": "iso-bench",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A JS benchmarking tool that keeps a clean context for every running test, to avoid javascript runtime optimizations between tests.",
   "types": "./types/index.d.ts",
+  "browser": "./lib/iso-bench.browser.js",
   "main": "./lib/iso-bench",
   "exports": {
     "import": "./lib/iso-bench.mjs",
@@ -16,7 +17,12 @@
     "benchmark",
     "performance",
     "workers",
-    "context"
+    "context",
+    "pollution",
+    "opt",
+    "deopt",
+    "optimizations",
+    "deoptimizations"
   ],
   "scripts": {
     "watch": "npx tsc --watch --inlineSourcemap",
@@ -29,9 +35,13 @@
     "url": "https://github.com/llorx/iso-bench"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^21.0.3",
+    "@rollup/plugin-typescript": "^8.3.0",
+    "@types/node": "^18.6.3",
+    "rollup": "^2.77.2",
+    "rollup-plugin-dts": "^4.2.2",
+    "rollup-plugin-terser": "^7.0.2",
+    "tslib": "^2.4.0",
     "typescript": "^4.4.4"
-  },
-  "dependencies": {
-    "@types/node": "^18.6.3"
   }
 }
