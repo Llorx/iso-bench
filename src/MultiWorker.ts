@@ -2,8 +2,25 @@ const isBrowser = new Function("try {return this===window;}catch(e){ return fals
 
 import type { Worker as NodeWorker } from "worker_threads";
 
-const BROWSER_INJECTION = _browserInjection.toString().substring(_browserInjection.toString().indexOf("{") + 1, _browserInjection.toString().lastIndexOf("}"));
-const NODE_INJECTION = _nodeInjection.toString().substring(_nodeInjection.toString().indexOf("{") + 1, _nodeInjection.toString().lastIndexOf("}"));
+const BROWSER_INJECTION = `
+const _d_ñ = v => v;
+const _now_ñ = performance.now;
+const _dif_ñ = d => _now_ñ() - d;
+console.log = (...args) => {
+    parent.postMessage({ log: args });
+};
+`;
+const NODE_INJECTION = `
+const parent = require("worker_threads").parentPort;
+const performance = require("perf_hooks").performance;
+const _d_ñ = v => require("v8").deserialize(v);
+const _now_ñ = process.hrtime.bigint;
+const _dif_ñ = d => Number(_now_ñ() - d) / 1000000;
+console.log = (...args) => {
+    parent.postMessage({ log: args });
+};
+const close = process.exit;
+`;
 
 export class MultiWorker {
     private _browserWorker:Worker = null as unknown as Worker;
@@ -34,23 +51,4 @@ export class MultiWorker {
             this._nodeWorker.postMessage(require("v8").serialize(msg));
         }
     }
-}
-function _browserInjection() {
-    const _d_ñ = (v:any) => v;
-    const _now_ñ = performance.now;
-    const _dif_ñ = (d:number) => _now_ñ() - d;
-    console.log = (...args:any[]) => {
-        parent.postMessage({ log: args });
-    };
-}
-function _nodeInjection() {
-    const parent = require("worker_threads").parentPort;
-    const performance = require("perf_hooks").performance;
-    const _d_ñ = (v:Uint8Array) => require("v8").deserialize(v);
-    const _now_ñ = process.hrtime.bigint;
-    const _dif_ñ = (d:bigint) => Number(_now_ñ() - d) / 1000000;
-    console.log = (...args:any[]) => {
-        parent.postMessage({ log: args });
-    };
-    const close = process.exit;
 }
