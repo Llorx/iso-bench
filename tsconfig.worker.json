@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "moduleResolution": "node",
+        "module": "commonjs",
+        "target": "ESNext",
+        "removeComments": true,
+        "noImplicitThis": true,
+        "strictBindCallApply": true,
+        "strictNullChecks": true,
+        "strict": true,
+        "outDir": "./lib",
+        "esModuleInterop": false,
+        "lib": ["DOM", "ESNext"]
+    },
+    "include": [
+        "./src/worker.ts"
+    ]
+}
