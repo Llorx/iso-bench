@@ -1,9 +1,9 @@
 # iso-bench
-`iso-bench` is a small benchmark library focused on avoiding optimization/deoptimization pollution between tests.
+`iso-bench` is a small benchmark library focused on avoiding optimization/deoptimization pollution between tests by isolating them.
 ## Motivation
-I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them somehow (deoptiomizations and such). After this, I decided to take advantage of Workers to do tests on completely separated V8 instances/threads, to avoid present and future _optimization/deoptimization pollution_.
+I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them somehow (deoptiomizations and such). After this, I decided to take advantage of Workers to do tests in completely separated V8 instances/threads, to avoid present and future _optimization/deoptimization pollution_.
 
-You may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem I had to redo some [Pac-o-Pack](https://github.com/Llorx/pacopack) code ☹️.
+All single threaded benchmark libraries has this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem I had to redo some [Pac-o-Pack](https://github.com/Llorx/pacopack) code ☹️.
 ## Pollution examples
 Running this test on `benchmark.js` will return different outcomes. Note how I rerun the same very first test again, but it gives different results. And if you change the order, always the first test runs faster:
 ```javascript
@@ -125,10 +125,12 @@ scope.add("indexOf", () => {
 .result()
 .run();
 ```
-Also, you may want to send data from the main thread to the Worker threads. To achieve this, you can send them to the `Scope` as arguments. Note the "send" word. They are duplicated and recreated, not passed by reference, so only objects that can be sent through Workers ([NodeJS => v8.serialize()](https://nodejs.org/api/v8.html) / [Browser => structuredClone()](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm)) are allowed here:
+### Access main thread scope
+To use variables and/or objects from the main thread in the Worker threads, you have to send them to the `Scope` as arguments. Note the "send" word. They are duplicated and recreated, not passed by reference, so only objects that can be sent through Workers are allowed here ([NodeJS => v8.serialize()](https://nodejs.org/api/v8.html) / [Browser => structuredClone()](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm)):
 ```javascript
 import { IsoBench } from "iso-bench";
 
+// Array with the same random numbers for both tests
 let randomValues = new Array(1000).fill(0).map(() => Math.floor(Math.random()*10));
 
 let scope = new IsoBench.Scope({}, (randomValues) => {
@@ -154,7 +156,7 @@ scope.add("concat", (randomValues) => {
 ```
 In the end, you can threat the `Scope` as a setup script that is executed before each run where you can encapsulate your setup logic.
 
-## libraries
+### Libraries
 To use libraries, you need to `require/import` them inside the `Scope` logic.
 
 With NodeJS you just use `require()` or `import`:
