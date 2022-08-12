@@ -173,7 +173,7 @@ export namespace IsoBench {
         private _getWorkerScript(data:ScriptData) {
             return `parent.addEventListener("message", async _event_ñ => {
                 try {
-                    const _data_ñ = _d_ñ(_event_ñ.data);
+                    const _data_ñ = _d_ñ(_event_ñ.data || _event_ñ);
                     ${this._setup}
                     ${data.script.evalArgs}
                     const _n_ñ = _now_ñ();

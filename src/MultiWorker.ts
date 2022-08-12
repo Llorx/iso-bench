@@ -12,6 +12,9 @@ console.log = (...args) => {
 `;
 const NODE_INJECTION = `
 const parent = require("worker_threads").parentPort;
+if (!parent.addEventListener) {
+    parent.addEventListener = parent.on;
+}
 const performance = require("perf_hooks").performance;
 const _d_ñ = v => require("v8").deserialize(v);
 const _now_ñ = process.hrtime.bigint;
