@@ -1,7 +1,7 @@
 {
   "name": "iso-bench",
   "version": "1.0.3",
-  "description": "A JS benchmarking tool that keeps a clean context for every running test, to avoid javascript runtime optimizations between tests.",
+  "description": "Small benchmark library focused on avoiding optimization/deoptimization pollution between tests by isolating them.",
   "types": "./types/index.d.ts",
   "browser": "./lib/iso-bench.browser.js",
   "main": "./lib/iso-bench",

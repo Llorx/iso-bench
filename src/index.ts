@@ -56,6 +56,7 @@ export namespace IsoBench {
     export type ScopeOptions = {
         parallel?:number;
         ms?:number;
+        minMs?:number;
     };
     export class Scope<T_ARGS extends any[], T_SCOPE extends readonly any[]> {
         private _args;
@@ -72,6 +73,7 @@ export namespace IsoBench {
             this.options = {
                 parallel: 1,
                 ms: 1000,
+                minMs: 1000,
                 ...options
             };
             this._setup = _setup ? `let _args_ñ = await eval(${String(_setup)})(..._data_ñ.args);` : "";
@@ -199,9 +201,9 @@ export namespace IsoBench {
                     this._checkOutput();
                 } else {
                     let ms = result.diff;
-                    if (ms < 50) {
-                        let r = 50 / ms;
-                        data.cycles = Math.round(data.cycles * (r || 50));
+                    if (ms < this.options.minMs) {
+                        let r = this.options.minMs / ms;
+                        data.cycles = Math.round(data.cycles * (r || this.options.minMs));
                         this._scripts.unshift(data);
                     } else {
                         data.samples++;

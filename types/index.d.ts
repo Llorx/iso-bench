@@ -8,6 +8,7 @@ declare namespace IsoBench {
     type ScopeOptions = {
         parallel?: number;
         ms?: number;
+        minMs?: number;
     };
     class Scope<T_ARGS extends any[], T_SCOPE extends readonly any[]> {
         private _args;
