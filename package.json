@@ -1,6 +1,6 @@
 {
   "name": "iso-bench",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Small benchmark library focused on avoiding optimization/deoptimization pollution between tests by isolating them.",
   "types": "./types/index.d.ts",
   "browser": "./lib/iso-bench.browser.js",
