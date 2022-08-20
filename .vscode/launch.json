@@ -8,9 +8,7 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Tests",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
+            "skipFiles": [],
             "program": "${workspaceFolder}\\lib\\tests",
             "outFiles": [
                 "${workspaceFolder}/lib/**/*.js"

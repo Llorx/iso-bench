@@ -9,12 +9,15 @@
         "strictBindCallApply": true,
         "strictNullChecks": true,
         "strict": true,
+        "declaration": true,
+        "declarationDir": "./types",
         "outDir": "./lib",
         "esModuleInterop": false,
         "lib": ["DOM", "ESNext"]
     },
     "include": [
         "./src/index.ts",
+        "./src/bench.ts",
         "./src/tests/index.ts"
     ]
 }

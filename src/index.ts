@@ -1,4 +1,7 @@
-import { MultiWorker } from "./MultiWorker";
+import { fork } from "child_process";
+import * as PATH from "path";
+
+import { Serializer } from "./Serializer";
 
 type Copy<T> = T extends Array<T> ? T : T; // Workaround to avoid empty scope arguments failing types
 
@@ -54,6 +57,7 @@ export namespace IsoBench {
         COMPLETED = "[TESTS COMPLETED]"
     };
     export type ScopeOptions = {
+        __dirname?:string;
         parallel?:number;
         ms?:number;
         minMs?:number;
@@ -66,16 +70,25 @@ export namespace IsoBench {
         private _loggedScripts = new Set<ScriptData>()
         private _logData:(ScriptData|LogData|OutputData)[] = [];
         private _running = 0;
+        private _requirePaths:string[] = [];
         private _endCb:(() => void) | null = null;;
         readonly options:Required<ScopeOptions>;
         started = false;
         constructor(options:ScopeOptions = {}, _setup?:(...args:Copy<T_ARGS>) => Promise<T_SCOPE>|T_SCOPE, ...args:T_ARGS) {
             this.options = {
+                __dirname: process.cwd(),
                 parallel: 1,
                 ms: 1000,
-                minMs: 1000,
+                minMs: 100,
                 ...options
             };
+            this.options.__dirname = PATH.resolve(this.options.__dirname);
+            let pathParts = this.options.__dirname.split(PATH.sep);
+            let path = "";
+            for (let part of pathParts) {
+                path += `${part}${PATH.sep}`;
+                this._requirePaths.push(`${path}${PATH.sep}node_modules${PATH.sep}`);
+            }
             this._setup = _setup ? `let _args_ñ = await eval(${String(_setup)})(..._data_ñ.args);` : "";
             this._args = args;
         }
@@ -138,7 +151,7 @@ export namespace IsoBench {
                 this._loggedScripts.add(data);
                 if (clear && data.opMs > 0) {
                     data.log!.push(`${(data.opMs / min).toFixed(3)}x`);
-                    data.log!.push(`${data.opMs === min ? STRINGS.WORSE : ""}${data.opMs === max ? STRINGS.BEST : ""}`);
+                    data.log!.push(`${data.opMs === min ? `(${STRINGS.WORSE})` : ""}${data.opMs === max ? `(${STRINGS.BEST})` : ""}`);
                 }
                 console.log(...data.log!);
             }
@@ -171,22 +184,18 @@ export namespace IsoBench {
             }
         }
         private _getWorkerScript(data:ScriptData) {
-            return `parent.addEventListener("message", async _event_ñ => {
-                try {
-                    const _data_ñ = _d_ñ(_event_ñ.data || _event_ñ);
-                    ${this._setup}
-                    ${data.script.evalArgs}
-                    const _n_ñ = _now_ñ();
-                    for (let _i_ñ = 0; _i_ñ < ${data.cycles}; _i_ñ++) {
-                        ${data.script.body}
-                    }
-                    const _diff_ñ = _dif_ñ(_n_ñ);
-                    parent.postMessage({ diff: _diff_ñ });
-                } catch (e) {
-                    parent.postMessage({ error: String(e) });
-                }
-                close();
-            });`;
+            return `const _now_ñ = process.hrtime.bigint;
+            const _dif_ñ = d => Number(_now_ñ() - d) / 1000000;
+            console.log = (...args) => {
+                process.stdout.write(Serializer.serialize({ log: args }));
+            };
+            ${this._setup}
+            ${data.script.evalArgs}
+            const _n_ñ = _now_ñ();
+            for (let _i_ñ = 0; _i_ñ < ${data.cycles}; _i_ñ++) {
+                ${data.script.body}
+            }
+            process.stdout.end(Serializer.serialize({ diff: _dif_ñ(_n_ñ) }));`;
         }
         private _checkDataResult(data:ScriptData, result:{log:string}|{error:string}|{diff:number}) {
             if ("log" in result) {
@@ -224,18 +233,30 @@ export namespace IsoBench {
         }
         private _runWorker(data:ScriptData) {
             this._running++;
-            let worker = new MultiWorker(this._getWorkerScript(data));
-            worker.addEventListener("message", event => {
-                if (!event.data) {
-                    this._checkDataResult(data, event as any); // as any because of dom typings
-                } else {
-                    this._checkDataResult(data, event.data);
+            let bufferReader = Serializer.getReader<{log:string}|{error:string}|{diff:number}>();
+            let proc = fork(`${__dirname}/bench.js`, {
+                stdio: ["pipe", "pipe", null, "ipc"],
+                cwd: process.cwd()
+            });
+            proc.stdout!.on("data", (buffer:Buffer|null) => {
+                while(true) {
+                    let result = bufferReader.process(buffer);
+                    buffer = null;
+                    if (result && result.data) {
+                        this._checkDataResult(data, result.data);
+                    } else {
+                        break;
+                    }
                 }
             });
-            worker.addEventListener("error", console.error);
-            worker.postMessage({
-                args: this._args || []
-            });
+            proc.on("error", console.error);
+            proc.stdin!.end(Serializer.serialize({
+                args: this._args || [],
+                script: this._getWorkerScript(data),
+                __dirname: this.options.__dirname,
+                __filename: PATH.join(this.options.__dirname, "bench.js"),
+                paths: this._requirePaths
+            }));
         }
     }
 }

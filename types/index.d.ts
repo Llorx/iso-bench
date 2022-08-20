@@ -1,11 +1,12 @@
 declare type Copy<T> = T extends Array<T> ? T : T;
-declare namespace IsoBench {
+export declare namespace IsoBench {
     enum STRINGS {
         WORSE = "WORSE",
         BEST = "BEST",
         COMPLETED = "[TESTS COMPLETED]"
     }
     type ScopeOptions = {
+        __dirname?: string;
         parallel?: number;
         ms?: number;
         minMs?: number;
@@ -18,6 +19,7 @@ declare namespace IsoBench {
         private _loggedScripts;
         private _logData;
         private _running;
+        private _requirePaths;
         private _endCb;
         readonly options: Required<ScopeOptions>;
         started: boolean;
@@ -35,5 +37,4 @@ declare namespace IsoBench {
         private _runWorker;
     }
 }
-
-export { IsoBench };
+export {};
