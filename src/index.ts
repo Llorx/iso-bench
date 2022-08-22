@@ -92,7 +92,7 @@ export namespace IsoBench {
             this._setup = _setup ? `let _args_ñ = await eval(${String(_setup)})(..._data_ñ.args);` : "";
             this._args = args;
         }
-        add(name:string, cb:(...args:T_SCOPE)=>any) {
+        add(name:string, cb:(...args:T_SCOPE)=>void) {
             let data:ScriptData = {
                 name: name,
                 samples: 0,

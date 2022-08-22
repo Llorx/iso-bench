@@ -24,7 +24,7 @@ export declare namespace IsoBench {
         readonly options: Required<ScopeOptions>;
         started: boolean;
         constructor(options?: ScopeOptions, _setup?: (...args: Copy<T_ARGS>) => Promise<T_SCOPE> | T_SCOPE, ...args: T_ARGS);
-        add(name: string, cb: (...args: T_SCOPE) => any): this;
+        add(name: string, cb: (...args: T_SCOPE) => void): this;
         log(...log: any[]): this;
         output(...log: any[]): this;
         result(...log: any[]): this;
