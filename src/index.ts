@@ -62,7 +62,7 @@ export namespace IsoBench {
         ms?:number;
         minMs?:number;
     };
-    export class Scope<T_ARGS extends any[], T_SCOPE extends readonly any[]> {
+    export class Scope<T_ARGS extends [...any[]], T_SCOPE extends readonly [any?, ...any[]]> {
         private _args;
         private _setup
         private _scripts:(ScriptData)[] = [];
@@ -220,7 +220,7 @@ export namespace IsoBench {
                         data.opMs = data.opMs < 0 ? ops : (data.opMs + ops) / 2;
                         data.totalTime += ms;
                         if (data.totalTime > this.options.ms) {
-                            data.log = [data.name, "-", Math.round(data.opMs*1000).toLocaleString(), "op/s.", data.samples, "workers in", Math.round(data.totalTime), "ms."];
+                            data.log = [data.name, "-", Math.round(data.opMs*1000).toLocaleString(), "op/s.", data.samples, "samples in", Math.round(data.totalTime), "ms."];
                             this._doneScripts.push(data);
                             this._checkOutput();
                         } else {

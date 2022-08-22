@@ -11,7 +11,7 @@ export declare namespace IsoBench {
         ms?: number;
         minMs?: number;
     };
-    class Scope<T_ARGS extends any[], T_SCOPE extends readonly any[]> {
+    class Scope<T_ARGS extends [...any[]], T_SCOPE extends readonly [any?, ...any[]]> {
         private _args;
         private _setup;
         private _scripts;

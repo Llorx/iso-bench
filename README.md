@@ -111,7 +111,7 @@ import { IsoBench } from "iso-bench";
 
 let scope = new IsoBench.Scope({}, () => {
     let regexp = /a/;
-    return [regexp] as const; // If you are using TypeScript, important to have "as const" here for typing reasons
+    return [regexp];
 });
 ```
 and now you are going to receive the scoped variables as function arguments in your tests:
@@ -134,7 +134,7 @@ import { IsoBench } from "iso-bench";
 let randomValues = new Array(1000).fill(0).map(() => Math.floor(Math.random()*10));
 
 let scope = new IsoBench.Scope({}, (randomValues) => {
-    return [randomValues] as const; // If you are using TypeScript, important to have "as const" here for typing reasons
+    return [randomValues];
 }, randomValues);
 
 scope.add("concat", (randomValues) => {
@@ -146,12 +146,15 @@ scope.add("concat", (randomValues) => {
 .add("join", (randomValues) => {
     randomValues.join("");
 })
-.result()
+.result("First part done")
 .log("Another test")
 .add("reduce", (randomValues) => {
     randomValues.reduce((res, c) => res + c, "");
 })
-.output("Done")
+.add("join", (randomValues) => {
+    randomValues.join("");
+})
+.result("Last part done")
 .run();
 ```
 In the end, you can threat the `Scope` as a setup script that is executed before each run where you can encapsulate your setup logic.
@@ -166,7 +169,7 @@ let scope = new IsoBench.Scope({
 }, () => {
     const { PacoPack } = require("pacopack"); 
     const { MyClass } = require("../MyClass"); 
-    return [new PacoPack(), new MyClass()] as const; // If you are using TypeScript, important to have "as const" here for typing reasons
+    return [new PacoPack(), new MyClass()];
 }, randomValues);
 ```
 
@@ -174,10 +177,41 @@ let scope = new IsoBench.Scope({
 ```javascript
 new IsoBench.Scope(options?, setup?, ...args?);
 ```
+Creates a new `Scope` to add tests.
 - `options`: Object:
-    - `__dirname`: The reference folder to use when calling `require`. This will simulate that the benchmark is running inside this folder instead of the internal one, so NodeJS will search for the proper `node_modules` or relative folders. Defaults to **process.cwd()**.
+    - `__dirname`: The reference folder to use when calling `require` inside the setup function. This will simulate that the benchmark is running inside this folder instead of the internal one, so NodeJS will search for the proper `node_modules` or relative files to this `__dirname`. Defaults to **process.cwd()**.
     - `parallel`: The amount of parallel tests to run. Although a test may end before its predecessor, the log output will honor the test order. Defaults to **1**.
-    - `ms`: The amount of time to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `minMs` between tests to take samples. Defaults to **1000**.
-    - `minMs`: The amount of minimum time for each loop to reach so the output is taken into account to calculate the performance. Defaults to **100**.
-- `setup`: A function that will be run inside the new process to setup before running the test. Can return a `Promise`. Will receive as arguments the extra arguments that you add to the constructor. Has to return an array, that will be used as arguments for the test functions.
-- `args`: The arguments that you can pass to the setup from the main thread. These arguments will be serialized, depending on the environment: [NodeJS => v8.serialize()](https://nodejs.org/api/v8.html) / [Browser => structuredClone()](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
+    - `ms`: The minimum time to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `minMs` between tests to take samples. Defaults to **1000**.
+    - `minMs`: The minimum time to invest on each cycle loop, so the sample is taken into account to calculate the performance. Defaults to **100**.
+- `setup`: A function that will be run inside the new process to setup before running the test. Can return a `Promise`. Will receive as arguments the extra arguments that you add to the constructor. Has to return an array that will be used as arguments for the test functions.
+- `args`: The arguments that you can pass to the setup from the main thread. These arguments will be serialized using: [v8.serialize()](https://nodejs.org/api/v8.html).
+---
+```javascript
+scope.add(name, test);
+```
+Adds new test.
+- `name`: The name of this test.
+- `test`: The test function to run. Will receive as arguments the elements returned by the `setup` function.
+---
+```javascript
+scope.log(...log);
+```
+Logs data in the console.
+- `log`: This will call `console.log` with the arguments passed.
+---
+```javascript
+scope.output(...log?);
+```
+Shows the output (no speed comparison) of the last tests since the last `result` or `output` calls (or since the first test if no previous `result` or `output` calls happened).
+- `log`: This will call `console.log` with the arguments passed. Optional.
+---
+```javascript
+scope.result(...log?);
+```
+Shows the result (with speed comparison) of the last tests since the last `result` call (or since the first test if no previous `result` call happened).
+- `log`: This will call `console.log` with the arguments passed. Optional.
+---
+```javascript
+scope.run();
+```
+Runs the tests and shows the outputs in order. Returns a `Promise` that will resolve when all the tests are completed.

@@ -27,7 +27,7 @@ function testArguments() {
     let scope = new IsoBench.Scope({
         ms: 10
     }, (buffer) => {
-        return ["test", 123, function() {}, buffer] as const;
+        return ["test", 123, function() {}, buffer];
     }, buffer);
     scope.add("args", (arg1, arg2, fn, buffer) => {
         console.log(arg1, arg2, fn.toString(), buffer, buffer.constructor.name);
@@ -42,7 +42,7 @@ function testAsyncArguments() {
     let scope = new IsoBench.Scope({
         ms: 10
     }, async (buffer) => {
-        return ["test", 123, function() {}, buffer] as const;
+        return ["test", 123, function() {}, buffer];
     }, buffer);
     scope.add("args", (arg1, arg2, fn, buffer) => {
         console.log(arg1, arg2, fn.toString(), buffer, buffer.constructor.name);
@@ -110,7 +110,7 @@ function librarytest() {
         ms: 100
     }, () => {
         const CRYPTO = require("crypto") as typeof CRYPTO_T;
-        return [CRYPTO] as const;
+        return [CRYPTO];
     });
     scope.add("md5", (CRYPTO) => {
         CRYPTO.createHash("md5").update("test").digest("hex");
@@ -120,12 +120,12 @@ function librarytest() {
 }
 
 (async function() {
-    /*await testArguments();
+    await testArguments();
     await testAsyncArguments();
     await slowfast();
     await fastslow();
     await singleOutputs();
-    await doubleoutput();*/
+    await doubleoutput();
     await librarytest();
     _consoleLog("Tests completed");
 })();
