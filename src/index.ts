@@ -75,6 +75,9 @@ export namespace IsoBench {
         readonly options:Required<ScopeOptions>;
         started = false;
         constructor(options:ScopeOptions = {}, _setup?:(...args:Copy<T_ARGS>) => Promise<T_SCOPE>|T_SCOPE, ...args:T_ARGS) {
+            if (!options || typeof options !== "object" || Array.isArray(options)) {
+                throw new Error("Invalid options object");
+            }
             this.options = {
                 __dirname: process.cwd(),
                 parallel: 1,
@@ -89,7 +92,7 @@ export namespace IsoBench {
                 path += `${part}${PATH.sep}`;
                 this._requirePaths.push(`${path}${PATH.sep}node_modules${PATH.sep}`);
             }
-            this._setup = _setup ? `let _args_ñ = await eval(${String(_setup)})(..._data_ñ.args);` : "";
+            this._setup = `const _args_ñ = ${_setup ? `let _args_ñ = await eval(${String(_setup)})(..._data_ñ.args);` : "[]"}`;
             this._args = args;
         }
         add(name:string, cb:(...args:T_SCOPE)=>void) {

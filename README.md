@@ -1,7 +1,7 @@
 # iso-bench
 `iso-bench` is a small benchmark library focused on avoiding optimization/deoptimization pollution between tests by isolating them.
 ## Motivation
-I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them somehow (deoptiomizations and such). After this, I decided to take advantage of forking to do tests in completely separated processes with their own V8 instances, memory and so on, to avoid present and future _optimization/deoptimization pollution_.
+I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them with V8 and memory optimizations/deoptimizations. After this, I decided to take advantage of forking to do tests in completely separated processes with their own V8 instances, memory and so on, to avoid present and future _optimization/deoptimization pollution_.
 
 All single threaded benchmark libraries have this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem I had to redo some [Pac-o-Pack](https://github.com/Llorx/pacopack) code ☹️.
 ## Pollution examples
