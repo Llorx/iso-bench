@@ -237,7 +237,7 @@ export namespace IsoBench {
         private _runWorker(data:ScriptData) {
             this._running++;
             let bufferReader = Serializer.getReader<{log:string}|{error:string}|{diff:number}>();
-            let proc = fork(`${__dirname}/bench.js`, {
+            let proc = fork(`${__dirname}/worker-bench.js`, {
                 stdio: ["pipe", "pipe", null, "ipc"],
                 cwd: process.cwd()
             });
@@ -257,7 +257,7 @@ export namespace IsoBench {
                 args: this._args || [],
                 script: this._getWorkerScript(data),
                 __dirname: this.options.__dirname,
-                __filename: PATH.join(this.options.__dirname, "bench.js"),
+                __filename: PATH.join(this.options.__dirname, "worker-bench.js"),
                 paths: this._requirePaths
             }));
         }

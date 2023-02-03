@@ -2,6 +2,6 @@
     "extends": "./tsconfig.json",
     "include": [
         "./src/index.ts",
-        "./src/bench.ts"
+        "./src/worker-bench.ts"
     ]
 }

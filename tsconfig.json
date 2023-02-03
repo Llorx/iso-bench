@@ -17,7 +17,7 @@
     },
     "include": [
         "./src/index.ts",
-        "./src/bench.ts",
+        "./src/worker-bench.ts",
         "./src/tests/index.ts"
     ]
 }
