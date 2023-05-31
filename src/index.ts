@@ -92,7 +92,7 @@ export namespace IsoBench {
                 path += `${part}${PATH.sep}`;
                 this._requirePaths.push(`${path}${PATH.sep}node_modules${PATH.sep}`);
             }
-            this._setup = `const _args_ñ = ${_setup ? `let _args_ñ = await eval(${String(_setup)})(..._data_ñ.args);` : "[]"}`;
+            this._setup = `const _args_ñ = ${_setup ? `await eval(${String(_setup)})(..._data_ñ.args)` : "[]"};`;
             this._args = args;
         }
         add(name:string, cb:(...args:T_SCOPE)=>void) {
