@@ -12,12 +12,11 @@
         "declaration": true,
         "declarationDir": "./types",
         "outDir": "./lib",
-        "esModuleInterop": false,
+        "esModuleInterop": true,
         "lib": ["DOM", "ESNext"]
     },
     "include": [
         "./src/index.ts",
-        "./src/worker-bench.ts",
         "./src/tests/index.ts"
     ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "iso-bench",
-  "version": "1.1.4",
-  "description": "Small benchmark library focused on avoiding optimization/deoptimization pollution between tests by isolating them.",
+  "version": "2.0.1",
+  "description": "Small benchmark library focused in avoiding optimization/deoptimization pollution between tests by isolating them.",
   "types": "./types/index.d.ts",
   "main": "./lib/",
   "files": [
@@ -17,7 +17,8 @@
     "opt",
     "deopt",
     "optimizations",
-    "deoptimizations"
+    "deoptimizations",
+    "benny"
   ],
   "scripts": {
     "watch": "npx tsc --watch --inlineSourcemap",
