@@ -1,4 +1,6 @@
 import cluster, { ClusterSettings } from "cluster";
+import FS from "fs";
+import type STREAM from "stream";
 
 type SetupMessage = {
     testName:string;
@@ -10,11 +12,33 @@ interface ClusterSettingsWH extends ClusterSettings {
     windowsHide?:boolean;
 }
 
+function onRead(stream:STREAM.Readable, cb:(msg:any)=>void) {
+    let buffer = Buffer.allocUnsafe(0);
+    stream.on("data", (data:Buffer) => {
+        buffer = Buffer.concat([buffer, data]);
+        while (buffer.length >= 4) {
+            const size = buffer.readUint32LE();
+            if (buffer.length >= 4 + size) {
+                const message = JSON.parse(buffer.slice(4, 4 + size).toString());
+                buffer = buffer.slice(4 + size);
+                cb(message);
+            }
+        }
+    });
+}
+function send(stream:STREAM.Writable, data:any) {
+    const bufferLength = Buffer.allocUnsafe(4);
+    const buffer = Buffer.from(JSON.stringify(data));
+    bufferLength.writeUint32LE(buffer.length);
+    stream.write(Buffer.concat([bufferLength, buffer]));
+}
+
+let writeStream:FS.WriteStream|null = null;
 const isMaster = !!(cluster.isMaster || cluster.isPrimary);
 if (isMaster) {
     const options:ClusterSettingsWH = {
-        silent: false,
-        windowsHide: true
+        windowsHide: true,
+        stdio: ["pipe", "pipe", "pipe", "pipe", "pipe", "ipc"]
     };
     if (cluster.setupPrimary) {
         cluster.setupPrimary(options);
@@ -22,7 +46,8 @@ if (isMaster) {
         cluster.setupMaster(options);
     }
 } else {
-    process.on("message", (message:SetupMessage) => {
+    writeStream = FS.createWriteStream("", {fd: 3});
+    onRead(FS.createReadStream("", {fd: 4}), (message:SetupMessage) => {
         updateIds(message);
     });
 }
@@ -126,7 +151,7 @@ export class IsoBench {
         if (!this._ready) {
             return;
         }
-        if (!process.send) {
+        if (!writeStream) {
             throw new Error("No parent process");
         }
         if (this.name === setup.benchName) {
@@ -138,11 +163,11 @@ export class IsoBench {
                 if (!test) {
                     throw new Error("Test '" + setup.testName + "' not found");
                 }
-                process.send({
+                send(writeStream, {
                     diff: this._runTest(test, setup.cycles)
                 });
             } catch (e) {
-                process.send({
+                send(writeStream, {
                     error: String(e)
                 });
             }
@@ -201,7 +226,7 @@ export class IsoBench {
                     }
                 }
             };
-            worker.on("message", message => {
+            onRead(worker.process.stdio[3]! as STREAM.Readable, (message:any) => {
                 done(message.error, message.diff);
             });
             const setup:SetupMessage = {
@@ -209,7 +234,7 @@ export class IsoBench {
                 benchName: this.name,
                 cycles: test.cycles
             };
-            worker.send(setup);
+            send(worker.process.stdio[4]! as STREAM.Writable, setup);
             worker.on("exit", (code) => {
                 done("Process ended prematurely. Exit code: " + code);
             });
