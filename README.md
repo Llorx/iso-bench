@@ -53,8 +53,8 @@ Example code:
 ```javascript
 import { IsoBench } from "iso-bench";
 
-const scope = new IsoBench("My bench");
-scope.add("indexOf", () => {
+const bench = new IsoBench("My bench");
+bench.add("indexOf", () => {
     "thisisastring".indexOf("a") > -1;
 })
 .add("RegExp", () => {
@@ -75,13 +75,13 @@ Creates a new `IsoBench` to add tests.
     - `minMs`: The minimum time to invest on each cycle loop, so the sample is taken into account to calculate the performance. Defaults to **100**.
 ---
 ```javascript
-scope.add(name, test);
+bench.add(name, test);
 ```
 Adds new test.
 - `name`: The name of this test.
 - `test`: The test function to run.
 ---
 ```javascript
-scope.run();
+bench.run();
 ```
 Runs the tests and shows the output in the console. Returns a `Promise` that will resolve when all the tests are completed.
