@@ -32,7 +32,7 @@ function updateIds(message:SetupMessage) {
     setup = message;
     const bench = BENCHES.get(setup.benchName);
     if (bench) {
-        bench.start(setup);
+        bench.run();
     }
 }
 
@@ -90,21 +90,6 @@ export class IsoBench {
         this.tests.set(newName, new Test(newName, callback));
         return this;
     }
-    getTests() {
-        return Array.from(this.tests.values());
-    }
-    output(tests:Test[]) {
-        const ops = tests.map(test => test.opMs);
-        const min = Math.min(...ops.filter(n => !!n));
-        const max = Math.max(...ops.filter(n => !!n));
-        for (const test of tests) {
-            if (test.opMs > 0) {
-                test.log.push(`${(test.opMs / min).toFixed(3)}x`);
-                test.log.push(`${test.opMs === min ? `(${STRINGS.WORSE})` : ""}${test.opMs === max ? `(${STRINGS.BEST})` : ""}`);
-            }
-            console.log(...test.log);
-        }
-    }
     log(...args:any) {
         this._logs.push(args);
         return this;
@@ -114,11 +99,11 @@ export class IsoBench {
             for (const log of this._logs) {
                 console.log(...log);
             }
-            const tests = this.getTests();
+            const tests = this._getTests();
             let i = 0;
             await Promise.allSettled(new Array(this.options.parallel).fill(0).map(async () => {
                 while(i < tests.length) {
-                    await this.newWorker(tests[i++]);
+                    await this._newWorker(tests[i++]);
                 }
             }));
             for (const test of tests) {
@@ -128,23 +113,16 @@ export class IsoBench {
                     test.log = [test.name, "-", Math.round(test.opMs*1000).toLocaleString(), "op/s.", test.samples, "samples in", Math.round(test.totalTime), "ms."];
                 }
             }
-            this.output(tests);
+            this._output(tests);
             console.log(STRINGS.COMPLETED);
         } else {
             this._ready = true;
             if (setup) {
-                this.start(setup);
+                this._start(setup);
             }
         }
     }
-    runTest(test:Test, cycles:number) {
-        const startTS = process.hrtime.bigint();
-        while(cycles-- > 0) {
-            test.callback();
-        }
-        return Number(process.hrtime.bigint() - startTS) / 1000000;
-    }
-    start(setup:SetupMessage) {
+    private _start(setup:SetupMessage) {
         if (!this._ready) {
             return;
         }
@@ -161,7 +139,7 @@ export class IsoBench {
                     throw new Error("Test '" + setup.testName + "' not found");
                 }
                 process.send({
-                    diff: this.runTest(test, setup.cycles)
+                    diff: this._runTest(test, setup.cycles)
                 });
             } catch (e) {
                 process.send({
@@ -171,7 +149,29 @@ export class IsoBench {
             process.exit();
         }
     }
-    newWorker(test:Test) {
+    private _getTests() {
+        return Array.from(this.tests.values());
+    }
+    private _output(tests:Test[]) {
+        const ops = tests.map(test => test.opMs);
+        const min = Math.min(...ops.filter(n => !!n));
+        const max = Math.max(...ops.filter(n => !!n));
+        for (const test of tests) {
+            if (test.opMs > 0) {
+                test.log.push(`${(test.opMs / min).toFixed(3)}x`);
+                test.log.push(`${test.opMs === min ? `(${STRINGS.WORSE})` : ""}${test.opMs === max ? `(${STRINGS.BEST})` : ""}`);
+            }
+            console.log(...test.log);
+        }
+    }
+    private _runTest(test:Test, cycles:number) {
+        const startTS = process.hrtime.bigint();
+        while(cycles-- > 0) {
+            test.callback();
+        }
+        return Number(process.hrtime.bigint() - startTS) / 1000000;
+    }
+    private _newWorker(test:Test) {
         return new Promise<void>((resolve => {
             let ended = false;
             const worker = cluster.fork();
@@ -186,7 +186,7 @@ export class IsoBench {
                         if (diff < this.options.minMs) {
                             const ratio = this.options.minMs / diff;
                             test.cycles = Math.round(test.cycles * (ratio || this.options.minMs));
-                            this.newWorker(test).then(resolve);
+                            this._newWorker(test).then(resolve);
                         } else {
                             test.samples++;
                             const ops = test.cycles / diff;
@@ -195,7 +195,7 @@ export class IsoBench {
                             if (test.totalTime >= this.options.ms) {
                                 resolve();
                             } else {
-                                this.newWorker(test).then(resolve);
+                                this._newWorker(test).then(resolve);
                             }
                         }
                     }
