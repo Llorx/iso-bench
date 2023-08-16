@@ -65,9 +65,10 @@ scope.add("indexOf", () => {
 
 ## Documentation
 ```javascript
-new IsoBench.Scope(options?);
+new IsoBench(name, options?);
 ```
-Creates a new `Scope` to add tests.
+Creates a new `IsoBench` to add tests.
+- `name`: The name of this IsoBench instance. Optional.
 - `options`: Object:
     - `parallel`: The amount of parallel tests to run. Although a test may end before its predecessor, the log output will honor the test order. Defaults to **1**.
     - `ms`: The minimum time to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `minMs` between tests to take samples. Defaults to **1000**.
