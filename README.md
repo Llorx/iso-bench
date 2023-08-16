@@ -24,13 +24,13 @@ const functions = {
     }
 };
 
-let buffers = new Array(1000).fill(0).map(() => {
-    let buf = Buffer.allocUnsafe(1);
+const buffers = new Array(1000).fill(0).map(() => {
+    const buf = Buffer.allocUnsafe(1);
     buf[0] = Math.floor(Math.random() * 0xFF);
     return buf;
 });
 const suite = new Benchmark.Suite();
-for (let [type, fn] of Object.entries(functions)) {
+for (const [type, fn] of Object.entries(functions)) {
     suite.add(`${type}`, () => {
         for (let i = 0; i < buffers.length; i++) {
             fn(buffers[i]);
