@@ -92,7 +92,7 @@ const BENCHES = new Map<string, IsoBench>();
 export class IsoBench {
     tests = new Map<string, Test>();
     options:Required<IsoBenchOptions>;
-    private _ready = false;
+    private _ready = 0;
     private _logs:any[][] = [];
     constructor(readonly name:string = "IsoBench", options?:IsoBenchOptions) {
         this.options = {...defaultOptions, ...options};
@@ -101,6 +101,9 @@ export class IsoBench {
             newName = `${name}_${IDs++}`;
         }
         BENCHES.set(newName, this);
+        if (!isMaster && setup) {
+            this.run();
+        }
     }
     static CallMaster(cb:()=>void) {
         if (isMaster) {
@@ -140,17 +143,13 @@ export class IsoBench {
             }
             this._output(tests);
             console.log(STRINGS.COMPLETED);
-        } else {
-            this._ready = true;
+        } else if (++this._ready === 2) {
             if (setup) {
                 this._start(setup);
             }
         }
     }
     private _start(setup:SetupMessage) {
-        if (!this._ready) {
-            return;
-        }
         if (!writeStream) {
             throw new Error("No parent process");
         }
