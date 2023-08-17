@@ -5,25 +5,20 @@ I've always used `benchmark.js` for my benchmark tests, but I noticed that **cha
 
 All single threaded benchmark libraries, like [benny](https://github.com/caderek/benny) or [benchmark.js](https://github.com/bestiejs/benchmark.js) have this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem I had to redo some [PacoPack](https://github.com/Llorx/pacopack) code ☹️.
 ## Pollution examples
-Running this test on `benchmark.js`, it will return different outcomes. Note how I rerun the same very first test again, but it gives different results. And if you change the order you get different results:
+Running this test on `benchmark.js`, it will return different outcomes. Note how I rerun the very same first test again:
 ```javascript
 const Benchmark = require("benchmark");
-
 const functions = {
-    direct: function(buf:Buffer) {
-        return buf[0];
-    },
     method: function(buf:Buffer) {
         return buf.readUint8(0);
     },
-    direct_again: function(buf:Buffer) {
+    direct: function(buf:Buffer) {
         return buf[0];
     },
     method_again: function(buf:Buffer) {
         return buf.readUint8(0);
     }
 };
-
 const buffers = new Array(1000).fill(0).map(() => {
     const buf = Buffer.allocUnsafe(1);
     buf[0] = Math.floor(Math.random() * 0xFF);
@@ -43,7 +38,53 @@ suite.on("cycle", event => {
     async: true
 });
 ```
-On iso-bench this is not possible, as every test will run in a completely different process. No matter the order, the outcome will be equally stable.
+Which yields the next results:
+```javascript
+method       x 314,830 ops/sec
+direct       x 300,522 ops/sec
+method_again x 187,985 ops/sec // WTF
+```
+And if I run the `direct` test first, it is even worse:
+```javascript
+direct       x 1,601,246 ops/sec // WTF. 5 TIMES FASTER THAN BEFORE???
+method       x 183,015 ops/sec // This test already got deoptimized
+method_again x 183,956 ops/sec
+```
+On iso-bench this is not possible, as every test will run in a completely different process. No matter the order, the outcome will be equally stable. This is the very same test on iso-bench:
+```javascript
+import { IsoBench } from "..";
+const bench = new IsoBench();
+const functions = {
+  method: function(buf:Buffer) {
+      return buf.readUint8(0);
+  },
+  direct: function(buf:Buffer) {
+      return buf[0];
+  },
+  method_again: function(buf:Buffer) {
+      return buf.readUint8(0);
+  }
+};
+const buffers = new Array(1000).fill(0).map(() => {
+  const buf = Buffer.allocUnsafe(1);
+  buf[0] = Math.floor(Math.random() * 0xFF);
+  return buf;
+});
+for (const [type, fn] of Object.entries(functions)) {
+  bench.add(`${type}`, () => {
+      for (let i = 0; i < buffers.length; i++) {
+          fn(buffers[i]);
+      }
+  });
+}
+bench.run();
+```
+Which yields these results with zero pollution:
+```javascript
+method       - 753.719 op/s. 10 samples in 1042 ms. 1.021x 
+direct       - 1.531.781 op/s. 10 samples in 1022 ms. 2.075x (BEST)
+method_again - 738.039 op/s. 10 samples in 1018 ms. 1.000x (WORSE)
+```
 ## Installation
 ```
 npm install iso-bench
