@@ -42,11 +42,11 @@ Which yields the next results:
 ```javascript
 method       x 314,830 ops/sec
 direct       x 300,522 ops/sec
-method_again x 187,985 ops/sec // WTF
+method_again x 187,985 ops/sec // WTF. SLOWER THAN ITS "method" CLONE??
 ```
 And if I run the `direct` test first, it is even worse:
 ```javascript
-direct       x 1,601,246 ops/sec // WTF. 5 TIMES FASTER THAN BEFORE???
+direct       x 1,601,246 ops/sec // WTF. 5 TIMES FASTER THAN BEFORE??
 method       x 183,015 ops/sec // This test already got deoptimized
 method_again x 183,956 ops/sec
 ```
