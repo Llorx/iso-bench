@@ -42,11 +42,11 @@ Which yields the next results:
 ```javascript
 method       x 314,830 ops/sec
 direct       x 300,522 ops/sec
-method_again x 187,985 ops/sec // WTF. SLOWER THAN ITS "method" CLONE??
+method_again x 187,985 ops/sec // SLOWER THAN "method" WHICH IS THE SAME ONE??
 ```
 And if I run the `direct` test first, it is even worse:
 ```javascript
-direct       x 1,601,246 ops/sec // WTF. 5 TIMES FASTER THAN BEFORE??
+direct       x 1,601,246 ops/sec // 5 TIMES FASTER THAN BEFORE??
 method       x 183,015 ops/sec // This test already got deoptimized
 method_again x 183,956 ops/sec
 ```
@@ -81,9 +81,9 @@ bench.run();
 ```
 Which yields these results with zero pollution:
 ```javascript
-method       - 753.719 op/s. 10 samples in 1042 ms. 1.021x 
-direct       - 1.531.781 op/s. 10 samples in 1022 ms. 2.075x (BEST)
-method_again - 738.039 op/s. 10 samples in 1018 ms. 1.000x (WORSE)
+method       - 1.163.583 op/s in 3140 ms. 1.009x (BEST)
+direct       - 1.152.923 op/s in 3035 ms. 1.000x (WORSE)
+method_again - 1.162.105 op/s in 3148 ms. 1.008x
 ```
 ## Installation
 ```
@@ -111,18 +111,20 @@ new IsoBench(name, options?);
 Creates a new `IsoBench` to add tests.
 - `name`: The name of this IsoBench instance. Optional.
 - `options`: Object:
-    - `parallel`: The amount of parallel tests to run. Although a test may end before its predecessor, the log output will honor the test order. Defaults to **1**.
-    - `ms`: The minimum time to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `minMs` between tests to take samples. Defaults to **1000**.
-    - `minMs`: The minimum time to invest on each cycle loop, so the sample is taken into account to calculate the performance. Defaults to **100**.
+    - `parallel`: The amount of parallel tests to run. Defaults to **1**.
+    - `time`: The minimum time (in milliseconds) to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `ms` between tests to take samples. Defaults to **3000**.
+    - `samples`: Amount of samples to get. Defaults to **1**.
+    - `warmUpTime`: The minimum time (in milliseconds) to pre-run the tests before running the actual tests, so the JavaScript engine optimizes them before running the timer. Defaults to **500**.
 ---
 ```javascript
-bench.add(name, test);
+bench.add(name, test):this;
 ```
 Adds new test.
 - `name`: The name of this test.
 - `test`: The test function to run.
+Returns the IsoBench instance, to concatenate new tests easily.
 ---
 ```javascript
-bench.run();
+bench.run():Promise<Test[]|null>;
 ```
-Runs the tests and shows the output in the console. Returns a `Promise` that will resolve when all the tests are completed.
+Runs the tests and shows the output in the console. Returns a `Promise` that will resolve when all the tests are completed. It will return an array with the test results, or `null` in the case of a child process, so better check for the output being nullish in case of using it.

@@ -6,6 +6,16 @@ type SetupMessage = {
     testName:string;
     benchName:string;
     cycles:number;
+    warmUpCycles:number;
+    ms:number;
+    warmUpMs:number;
+    first:boolean;
+};
+type RunMessage = {
+    error?:string;
+    diff?:number;
+    cycles?:number;
+    warmUpCycles?:number;
 };
 
 interface ClusterSettingsWH extends ClusterSettings {
@@ -26,7 +36,7 @@ function onRead(stream:STREAM.Readable, cb:(msg:any)=>void) {
         }
     });
 }
-function send(stream:STREAM.Writable, data:any) {
+function send(stream:STREAM.Writable, data:SetupMessage|RunMessage) {
     const bufferLength = Buffer.allocUnsafe(4);
     const buffer = Buffer.from(JSON.stringify(data));
     bufferLength.writeUint32LE(buffer.length);
@@ -38,7 +48,7 @@ const isMaster = !!(cluster.isMaster || cluster.isPrimary);
 if (isMaster) {
     const options:ClusterSettingsWH = {
         windowsHide: true,
-        stdio: ["pipe", "pipe", "pipe", "pipe", "pipe", "ipc"]
+        stdio: ["ignore", "ignore", "pipe", "pipe", "ipc"]
     };
     if (cluster.setupPrimary) {
         cluster.setupPrimary(options);
@@ -47,7 +57,7 @@ if (isMaster) {
     }
 } else {
     writeStream = FS.createWriteStream("", {fd: 3});
-    onRead(FS.createReadStream("", {fd: 4}), (message:SetupMessage) => {
+    onRead(FS.createReadStream("", {fd: 3}), (message:SetupMessage) => {
         updateIds(message);
     });
 }
@@ -63,22 +73,25 @@ function updateIds(message:SetupMessage) {
 
 export type IsoBenchOptions = {
     parallel?:number;
+    samples?:number;
     ms?:number;
-    minMs?:number;
+    warmUpMs?:number;
 };
 const defaultOptions:Required<IsoBenchOptions> = {
     parallel: 1,
-    ms: 1000,
-    minMs: 100
+    samples: 1,
+    ms: 3000,
+    warmUpMs: 500
 };
 
 class Test {
     error:string|null = null;
     log:any[] = [];
-    cycles = 100;
-    totalTime = 0;
+    cycles = 10;
+    warmUpCycles = 10;
     opMs = -1;
-    samples = 0;
+    totalTime = 0;
+    samples:{cycles: number, ms:number, ops:number}[] = [];
     constructor(readonly name:string, readonly callback:()=>void) {}
 }
 export const enum STRINGS {
@@ -93,7 +106,6 @@ export class IsoBench {
     tests = new Map<string, Test>();
     options:Required<IsoBenchOptions>;
     private _ready = 0;
-    private _logs:any[][] = [];
     constructor(readonly name:string = "IsoBench", options?:IsoBenchOptions) {
         this.options = {...defaultOptions, ...options};
         let newName = name;
@@ -105,7 +117,7 @@ export class IsoBench {
             this.run();
         }
     }
-    static CallMaster(cb:()=>void) {
+    static IfMaster(cb:()=>void) {
         if (isMaster) {
             cb();
         }
@@ -118,15 +130,8 @@ export class IsoBench {
         this.tests.set(newName, new Test(newName, callback));
         return this;
     }
-    log(...args:any) {
-        this._logs.push(args);
-        return this;
-    }
     async run() {
         if (isMaster) {
-            for (const log of this._logs) {
-                console.log(...log);
-            }
             const tests = this._getTests();
             let i = 0;
             await Promise.allSettled(new Array(this.options.parallel).fill(0).map(async () => {
@@ -137,33 +142,56 @@ export class IsoBench {
             for (const test of tests) {
                 if (test.error) {
                     test.log = [test.error];
+                } else if (test.samples.length > 1) {
+                    test.log = [test.name, "-", Math.round(test.opMs*1000).toLocaleString(), "op/s.", test.samples.length, "samples in", Math.round(test.totalTime), "ms."];
                 } else {
-                    test.log = [test.name, "-", Math.round(test.opMs*1000).toLocaleString(), "op/s.", test.samples, "samples in", Math.round(test.totalTime), "ms."];
+                    test.log = [test.name, "-", Math.round(test.opMs*1000).toLocaleString(), "op/s in", Math.round(test.totalTime), "ms."];
                 }
             }
             this._output(tests);
             console.log(STRINGS.COMPLETED);
+            return tests;
         } else if (++this._ready === 2) {
             if (setup) {
                 this._start(setup);
             }
         }
+        return null;
+    }
+    private _getTestResult(test:Test, targetMs:number, cycles:number) {
+        let diff:number;
+        while(true) {
+            diff = this._runTest(test, cycles);
+            if (diff >= targetMs) {
+                break;
+            } else {
+                const ratio = (targetMs / diff) * 1.05;
+                cycles = Math.round(cycles * ratio);
+            }
+        }
+        return {cycles, diff};
     }
     private _start(setup:SetupMessage) {
         if (!writeStream) {
             throw new Error("No parent process");
         }
         if (this.name === setup.benchName) {
-            for (const log of this._logs) {
-                console.log(...log);
-            }
             try {
                 const test = this.tests.get(setup.testName);
                 if (!test) {
                     throw new Error("Test '" + setup.testName + "' not found");
                 }
+                const warmUpResult = setup.warmUpMs > 0 ? this._getTestResult(test, setup.warmUpMs, setup.warmUpCycles) : null;
+                if (setup.first && warmUpResult) {
+                    // Use the warmup cycles to calculate the result cycles
+                    const ratio = (setup.warmUpMs / setup.ms) * 1.05;
+                    setup.cycles = warmUpResult.cycles * ratio;
+                }
+                const result = this._getTestResult(test, setup.ms, setup.cycles);
                 send(writeStream, {
-                    diff: this._runTest(test, setup.cycles)
+                    diff: result.diff,
+                    cycles: result.cycles,
+                    warmUpCycles: warmUpResult ? warmUpResult.cycles : 0
                 });
             } catch (e) {
                 send(writeStream, {
@@ -199,43 +227,58 @@ export class IsoBench {
         return new Promise<void>((resolve => {
             let ended = false;
             const worker = cluster.fork();
-            const done = (error?:string, diff?:number) => {
+            const done = (error?:string, diff?:number, cycles?:number, warmUpCycles?:number) => {
                 if (!ended) {
                     ended = true;
+                    if (cycles) {
+                        test.cycles = cycles;
+                    }
+                    if (warmUpCycles) {
+                        test.warmUpCycles = warmUpCycles;
+                    }
                     if (error) {
                         test.opMs = 0;
                         test.error = error;
                         resolve();
                     } else if (diff) {
-                        if (diff < this.options.minMs) {
-                            const ratio = this.options.minMs / diff;
-                            test.cycles = Math.round(test.cycles * (ratio || this.options.minMs));
-                            this._newWorker(test).then(resolve);
+                        test.samples.push({
+                            cycles: test.cycles,
+                            ms: diff,
+                            ops: test.cycles / diff
+                        });
+                        const ops = test.cycles / diff;
+                        test.opMs = test.opMs < 0 ? ops : (test.opMs + ops) / 2;
+                        test.totalTime += diff;
+                        if (test.samples.length >= this.options.samples) {
+                            test.opMs = test.samples.reduce((total, sample) => total + sample.ops, 0) / test.samples.length; 
+                            resolve();
                         } else {
-                            test.samples++;
-                            const ops = test.cycles / diff;
-                            test.opMs = test.opMs < 0 ? ops : (test.opMs + ops) / 2;
-                            test.totalTime += diff;
-                            if (test.totalTime >= this.options.ms) {
-                                resolve();
-                            } else {
-                                this._newWorker(test).then(resolve);
-                            }
+                            this._newWorker(test).then(resolve);
                         }
                     }
                 }
             };
-            onRead(worker.process.stdio[3]! as STREAM.Readable, (message:any) => {
-                done(message.error, message.diff);
+            onRead(worker.process.stdio[3]! as STREAM.Readable, (message:RunMessage) => {
+                done(message.error, message.diff, message.cycles, message.warmUpCycles);
             });
+            const errBuffer:Buffer[] = [];
+            worker.process.stderr!.on("data", data => errBuffer.push(data));
             const setup:SetupMessage = {
                 testName: test.name,
                 benchName: this.name,
-                cycles: test.cycles
+                cycles: test.cycles,
+                warmUpCycles: test.warmUpCycles,
+                ms: this.options.ms,
+                warmUpMs: this.options.warmUpMs,
+                first: test.samples.length === 0
             };
-            send(worker.process.stdio[4]! as STREAM.Writable, setup);
+            send(worker.process.stdio[3]! as STREAM.Writable, setup);
             worker.on("exit", (code) => {
-                done("Process ended prematurely. Exit code: " + code);
+                let err = `Process ended prematurely. Exit code: ${code}`;
+                if (errBuffer.length > 0) {
+                    err = `${err}. Error: ${Buffer.concat(errBuffer).toString()}`;
+                }
+                done(err);
             });
         }));
     }
