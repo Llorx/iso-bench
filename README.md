@@ -1,10 +1,20 @@
 # iso-bench
 `iso-bench` is a small benchmark library focused on avoiding optimization/deoptimization pollution between tests by isolating them.
-## Motivation
+
+1. [Motivation](#1-motivation)
+1. [Pollution examples](#2-pollution-examples)
+1. [Installation](#3-installation)
+1. [Usage](#4-usage)
+1. [Documentation](#5-documentation)
+   1. [Result](#i-result)
+   1. [Processor](#ii-processor)
+
+## 1. Motivation
 I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them with V8 and memory optimizations/deoptimizations. After this, I decided to take advantage of forking to do tests in completely separated processes with their own V8 instances, memory and so on, to avoid present and future _optimization/deoptimization pollution_.
 
 All single threaded benchmark libraries, like [benny](https://github.com/caderek/benny) or [benchmark.js](https://github.com/bestiejs/benchmark.js) have this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem I had to redo some [PacoPack](https://github.com/Llorx/pacopack) code ☹️.
-## Pollution examples
+
+## 2. Pollution examples
 Running this test on `benchmark.js`, it will return different outcomes. Note how I rerun the very same first test again:
 ```typescript
 const Benchmark = require("benchmark");
@@ -85,11 +95,13 @@ method       - 1.714.953 op/s in 3140 ms. 1.009x (BEST)
 direct       - 1.712.045 op/s in 3032 ms. 1.008x
 method_again - 1.699.022 op/s in 3128 ms. 1.000x (WORSE)
 ```
-## Installation
+
+## 3. Installation
 ```
 npm install iso-bench
 ```
-## Usage
+
+## 4. Usage
 Example code:
 ```typescript
 import { IsoBench } from "iso-bench";
@@ -105,7 +117,7 @@ bench.add("indexOf", () => {
 .run();
 ```
 
-## Documentation
+## 5. Documentation
 ```typescript
 new IsoBench(name, options?);
 ```
@@ -144,7 +156,7 @@ bench.run():Promise<Result>;
 ```
 Runs the tests and returns a `Promise` that will resolve when all the tests are completed. It will return a [Result](#result) instance.
 
-### Result
+### i. Result
 This is the result of the benchmark. It will contain a list of the tests executed. Note that inside the forked processes, this result will not contain any test (`getTests()` will return `null`), as the main process should be the only one processing the results.
 
 ---
@@ -153,7 +165,7 @@ result.getTests():Test[]|null;
 ```
 Returns an array of test results in the main process or `null` in a child process. Always check for `null` and do nothing if it is `null`. Only the master process should work with the result.
 
-### Processor
+### ii. Processor
 Processors will receive the benchmark events to process them. They must implement the Processor interface:
 ```typescript
 export interface Processor {
