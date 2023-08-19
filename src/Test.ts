@@ -6,11 +6,12 @@ import { Fork } from "./Fork";
 import { IsoBenchOptions } from ".";
 import { SetupMessage } from "./WorkerSetup";
 
-type RunMessage = {
-    error?:string;
-    diff?:number;
-    cycles?:number;
-    warmUpCycles?:number;
+export type RunMessage = {
+    error:string;
+}|{
+    diff:number;
+    cycles:number;
+    warmUpCycles:number;
 };
 
 class ForkContext {
@@ -80,7 +81,11 @@ class ForkContext {
                         const buffer = stream.read(size);
                         if (buffer && buffer.length === size) {
                             const message = JSON.parse(String(buffer)) as RunMessage;
-                            this._done(message.error, message.diff, message.cycles, message.warmUpCycles);
+                            if ("error" in message) {
+                                this._done(message.error);
+                            } else {
+                                this._done("", message.diff, message.cycles, message.warmUpCycles);
+                            }
                         }
                         break;
                     }
@@ -127,11 +132,12 @@ export class Test {
             setup.cycles = warmUpResult.cycles * ratio;
         }
         const result = this._getResult(setup.time, setup.cycles);
-        return {
+        const runResult:RunMessage = {
             diff: result.diff,
             cycles: result.cycles,
             warmUpCycles: warmUpResult ? warmUpResult.cycles : 0
         };
+        return runResult;
     }
     private _getResult(targetTime:number, cycles:number) {
         let diff:number;

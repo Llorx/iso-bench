@@ -1,6 +1,6 @@
 import FS from "fs";
 
-import { Test } from "./Test";
+import { RunMessage, Test } from "./Test";
 import { WorkerSetup, SetupMessage } from "./WorkerSetup";
 import { Result } from "./Result";
 import { Processor } from "./Processor";
@@ -74,7 +74,7 @@ export class IsoBench {
     }
     private _start(setup:SetupMessage) {
         if (this.name === setup.benchName) { // Wait for the specific test this fork should run
-            let sendData:any = null;
+            let sendData:RunMessage;
             try {
                 const test = this.tests.get(setup.testName);
                 if (!test) {
