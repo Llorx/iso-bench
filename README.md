@@ -77,7 +77,7 @@ for (const [type, fn] of Object.entries(functions)) {
       }
   });
 }
-bench.run().then(result => result.console.log());
+bench.consoleLog().run();
 ```
 Which yields these results with zero pollution:
 ```typescript
@@ -101,7 +101,8 @@ bench.add("indexOf", () => {
 .add("RegExp", () => {
     /a/.test("thisisastring");
 })
-.run().then(result => result.console.log());
+.consoleLog()
+.run();
 ```
 
 ## Documentation
@@ -114,7 +115,7 @@ Creates a new `IsoBench` to add tests.
     - `parallel`: The amount of parallel tests to run. Defaults to **1**.
     - `time`: The minimum time (in milliseconds) to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `ms` between tests to take samples. Defaults to **3000**.
     - `samples`: Amount of samples to get. Defaults to **1**.
-    - `warmUpTime`: The minimum time (in milliseconds) to pre-run the tests, so the JavaScript engine optimizer (TurboFan in V8) kicks-in before initializing the timer. Defaults to **500**.
+    - `warmUpTime`: The minimum time (in milliseconds) to pre-run the tests, so the JavaScript engine optimizer kicks-in before initializing the timer. Defaults to **500**.
 
 ---
 ```typescript
@@ -127,18 +128,56 @@ Returns the IsoBench instance, to concatenate new tests easily.
 
 ---
 ```typescript
+bench.consoleLog():this;
+```
+Adds a built-in [Processor](#processor) that outputs the result in the console.
+
+---
+```typescript
+bench.addProcessor(processor:Processor):this;
+```
+Adds a custom [Processor](#processor) that must implement the [Processor](#processor) interface.
+
+---
+```typescript
 bench.run():Promise<Result>;
 ```
-Runs the tests and returns a `Promise` that will resolve when all the tests are completed. It will return a `Result` instance.
+Runs the tests and returns a `Promise` that will resolve when all the tests are completed. It will return a [Result](#result) instance.
+
 ### Result
-This is the result of the benchmark. It will contain a list of the tests executed. Note that inside the forked processes, this result will not contain any test, as the main process should be the only one processing the results.
-```typescript
-result.console.log();
-```
-Shows the result log in the console.
+This is the result of the benchmark. It will contain a list of the tests executed. Note that inside the forked processes, this result will not contain any test (`getTests()` will return `null`), as the main process should be the only one processing the results.
 
 ---
 ```typescript
 result.getTests():Test[]|null;
 ```
 Returns an array of test results in the main process or `null` in a child process. Always check for `null` and do nothing if it is `null`. Only the master process should work with the result.
+
+### Processor
+Processors will receive the benchmark events to process them. They must implement the Processor interface:
+```typescript
+export interface Processor {
+    end?(result:Result):void;
+}
+```
+
+Processor methods:
+```typescript
+end(result:Result):void;
+```
+Will be called with a [Result](#result) instance when the benchmark ends. Optional.
+
+---
+Custom Processor example:
+```typescript
+import { Processor, Result } from "iso-bench";
+class MyProcessor implements Processor {
+    end(result:Result) {
+        const tests = result.getTests();
+        if (tests) {
+            console.log(tests);
+            // TODO: Work with the tests[] array
+        }
+    }
+}
+```

@@ -26,4 +26,4 @@ for (const [type, fn] of Object.entries(functions)) {
       }
   });
 }
-bench.run().then(result => result.console.log());
+bench.consoleLog().run();

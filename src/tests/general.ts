@@ -30,9 +30,9 @@ function slowfast() {
         /s/.test("test this");
     }).add("fast", () => {
         "test this".indexOf("s");
-    });
+    }).consoleLog();
     testLog(SLOW_REGEXP, FAST_REGEXP);
-    return bench.run().then(result => result.console.log());
+    return bench.run();
 }
 function fastslow() {
     _consoleLog("Testing fast-slow result comparison");
@@ -43,9 +43,9 @@ function fastslow() {
         "test this".indexOf("s");
     }).add("slow", () => {
         /s/.test("test this");
-    });
+    }).consoleLog();
     testLog(FAST_REGEXP, SLOW_REGEXP);
-    return bench.run().then(result => result.console.log());
+    return bench.run();
 }
 
 (async function() {
