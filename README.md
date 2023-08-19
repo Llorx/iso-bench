@@ -15,7 +15,7 @@ I've always used `benchmark.js` for my benchmark tests, but I noticed that **cha
 All single threaded benchmark libraries, like [benny](https://github.com/caderek/benny) or [benchmark.js](https://github.com/bestiejs/benchmark.js) have this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem I had to redo some [PacoPack](https://github.com/Llorx/pacopack) code ☹️.
 
 ## 2. Pollution examples
-Running this test on `benchmark.js`, it will return different outcomes. Note how I rerun the very same first test again:
+Running this test on `benchmark.js` will return different outcomes. Note how `method` and `method_again` run the very same exact code:
 ```typescript
 const Benchmark = require("benchmark");
 const functions = {
@@ -52,7 +52,7 @@ Which yields the next results:
 ```typescript
 method       x 314,830 ops/sec
 direct       x 300,522 ops/sec
-method_again x 187,985 ops/sec // SLOWER THAN "method" WHICH IS THE SAME ONE??
+method_again x 187,985 ops/sec // SLOWER THAN "method"?? IS THE SAME CODE!!
 ```
 And if I run the `direct` test first, it is even worse:
 ```typescript
