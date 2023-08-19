@@ -81,9 +81,9 @@ bench.run();
 ```
 Which yields these results with zero pollution:
 ```javascript
-method       - 1.163.583 op/s in 3140 ms. 1.009x (BEST)
-direct       - 1.152.923 op/s in 3035 ms. 1.000x (WORSE)
-method_again - 1.162.105 op/s in 3148 ms. 1.008x
+method       - 1.714.953 op/s in 3140 ms. 1.009x (BEST)
+direct       - 1.712.045 op/s in 3032 ms. 1.008x
+method_again - 1.699.022 op/s in 3128 ms. 1.000x (WORSE)
 ```
 ## Installation
 ```

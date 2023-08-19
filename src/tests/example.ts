@@ -1,18 +1,18 @@
 import { IsoBench } from "..";
 const functions = {
   method: function(buf:Buffer) {
-      return buf.readUint32LE(0);
+      return buf.readUint8(0);
   },
   direct: function(buf:Buffer) {
-      return ((buf[0] << 24) + (buf[1] << 16) + (buf[2] << 8) + (buf[3])) >>> 0;
+      return buf[0];
   },
   method_again: function(buf:Buffer) {
-      return buf.readUint32LE(0);
+      return buf.readUint8(0);
   }
 };
 const buffers = new Array(1000).fill(0).map(() => {
-  const buf = Buffer.allocUnsafe(4);
-  buf.writeUint32LE(Math.floor(Math.random() * 0xFFFFFFFF));
+  const buf = Buffer.allocUnsafe(1);
+  buf[0] = Math.floor(Math.random() * 0xFF);
   return buf;
 });
 
