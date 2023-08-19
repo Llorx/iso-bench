@@ -111,7 +111,7 @@ class ForkContext {
 export class Test {
     error:string|null = null;
     log:any[] = [];
-    cycles = 10;
+    cycles = 1;
     warmUpCycles = 1;
     opMs = -1;
     totalTime = 0;
@@ -128,7 +128,7 @@ export class Test {
         const warmUpResult = setup.warmUpTime > 0 ? this._getResult(setup.warmUpTime, setup.warmUpCycles) : null;
         if (setup.first && warmUpResult) {
             // Use the warmup cycles to calculate the result cycles
-            const ratio = (setup.warmUpTime / setup.time) * 1.05;
+            const ratio = (setup.warmUpTime / setup.time) * 1.02;
             setup.cycles = warmUpResult.cycles * ratio;
         }
         const result = this._getResult(setup.time, setup.cycles);
@@ -146,7 +146,7 @@ export class Test {
             if (diff >= targetTime) {
                 break;
             } else {
-                const ratio = (targetTime / diff) * 1.05;
+                const ratio = (targetTime / diff) * 1.02; // Add a 2% extra, just in case it is not enough
                 cycles = Math.ceil(cycles * ratio);
             }
         }
