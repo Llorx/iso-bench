@@ -88,7 +88,7 @@ class Test {
     error:string|null = null;
     log:any[] = [];
     cycles = 10;
-    warmUpCycles = 10;
+    warmUpCycles = 1;
     opMs = -1;
     totalTime = 0;
     samples:{cycles: number, time:number, ops:number}[] = [];
@@ -166,7 +166,7 @@ export class IsoBench {
                 break;
             } else {
                 const ratio = (targetTime / diff) * 1.05;
-                cycles = Math.round(cycles * ratio);
+                cycles = Math.ceil(cycles * ratio);
             }
         }
         return {cycles, diff};
