@@ -16,7 +16,9 @@ const buffers = new Array(1000).fill(0).map(() => {
   return buf;
 });
 
-const bench = new IsoBench("test");
+const bench = new IsoBench("test", {
+  parallel: 4
+});
 for (const [type, fn] of Object.entries(functions)) {
   bench.add(`${type}`, () => {
       for (let i = 0; i < buffers.length; i++) {
@@ -24,4 +26,4 @@ for (const [type, fn] of Object.entries(functions)) {
       }
   });
 }
-bench.run();
+bench.run().then(result => result.console.log());

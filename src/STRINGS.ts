@@ -1,0 +1,6 @@
+export const enum STRINGS {
+    WORSE = "WORSE",
+    BEST = "BEST",
+    COMPLETED = "[TESTS COMPLETED]",
+    ISO_BENCH_SETUP = "ISO_BENCH_SETUP"
+}

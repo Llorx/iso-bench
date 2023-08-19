@@ -10,7 +10,7 @@
         "strictNullChecks": true,
         "strict": true,
         "declaration": true,
-        "declarationDir": "./types",
+        "declarationDir": "./lib/_types",
         "outDir": "./lib",
         "esModuleInterop": true,
         "lib": ["DOM", "ESNext"]

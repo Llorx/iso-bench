@@ -6,7 +6,7 @@ I've always used `benchmark.js` for my benchmark tests, but I noticed that **cha
 All single threaded benchmark libraries, like [benny](https://github.com/caderek/benny) or [benchmark.js](https://github.com/bestiejs/benchmark.js) have this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem I had to redo some [PacoPack](https://github.com/Llorx/pacopack) code ☹️.
 ## Pollution examples
 Running this test on `benchmark.js`, it will return different outcomes. Note how I rerun the very same first test again:
-```javascript
+```typescript
 const Benchmark = require("benchmark");
 const functions = {
     method: function(buf:Buffer) {
@@ -39,19 +39,19 @@ suite.on("cycle", event => {
 });
 ```
 Which yields the next results:
-```javascript
+```typescript
 method       x 314,830 ops/sec
 direct       x 300,522 ops/sec
 method_again x 187,985 ops/sec // SLOWER THAN "method" WHICH IS THE SAME ONE??
 ```
 And if I run the `direct` test first, it is even worse:
-```javascript
+```typescript
 direct       x 1,601,246 ops/sec // 5 TIMES FASTER THAN BEFORE??
 method       x 183,015 ops/sec // This test already got deoptimized
 method_again x 183,956 ops/sec
 ```
 On iso-bench this is not possible, as every test will run in a completely different process. No matter the order, the outcome will be equally stable. This is the very same test on iso-bench:
-```javascript
+```typescript
 import { IsoBench } from "..";
 const bench = new IsoBench();
 const functions = {
@@ -77,10 +77,10 @@ for (const [type, fn] of Object.entries(functions)) {
       }
   });
 }
-bench.run();
+bench.run().then(result => result.console.log());
 ```
 Which yields these results with zero pollution:
-```javascript
+```typescript
 method       - 1.714.953 op/s in 3140 ms. 1.009x (BEST)
 direct       - 1.712.045 op/s in 3032 ms. 1.008x
 method_again - 1.699.022 op/s in 3128 ms. 1.000x (WORSE)
@@ -91,7 +91,7 @@ npm install iso-bench
 ```
 ## Usage
 Example code:
-```javascript
+```typescript
 import { IsoBench } from "iso-bench";
 
 const bench = new IsoBench("My bench");
@@ -101,11 +101,11 @@ bench.add("indexOf", () => {
 .add("RegExp", () => {
     /a/.test("thisisastring");
 })
-.run();
+.run().then(result => result.console.log());
 ```
 
 ## Documentation
-```javascript
+```typescript
 new IsoBench(name, options?);
 ```
 Creates a new `IsoBench` to add tests.
@@ -114,9 +114,9 @@ Creates a new `IsoBench` to add tests.
     - `parallel`: The amount of parallel tests to run. Defaults to **1**.
     - `time`: The minimum time (in milliseconds) to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `ms` between tests to take samples. Defaults to **3000**.
     - `samples`: Amount of samples to get. Defaults to **1**.
-    - `warmUpTime`: The minimum time (in milliseconds) to pre-run the tests before running the actual tests, so the JavaScript engine optimizes them before running the timer. Defaults to **500**.
+    - `warmUpTime`: The minimum time (in milliseconds) to pre-run the tests, so the JavaScript engine optimizer (TurboFan in V8) kicks-in before initializing the timer. Defaults to **500**.
 ---
-```javascript
+```typescript
 bench.add(name, test):this;
 ```
 Adds new test.
@@ -124,7 +124,19 @@ Adds new test.
 - `test`: The test function to run.
 Returns the IsoBench instance, to concatenate new tests easily.
 ---
-```javascript
-bench.run():Promise<Test[]|null>;
+```typescript
+bench.run():Promise<Result>;
 ```
-Runs the tests and shows the output in the console. Returns a `Promise` that will resolve when all the tests are completed. It will return an array with the test results, or `null` in the case of a child process, so better check for the output being nullish in case of using it.
+Runs the tests and returns a `Promise` that will resolve when all the tests are completed. It will return a `Result` instance.
+# Result
+This is the result of the benchmark. It will contain a list of the tests executed. Note that inside the forked processes, this result will not contain any test, as the main process should be the only one processing the results.
+---
+```typescript
+result.console.log();
+```
+Shows the result log in the console.
+---
+```typescript
+result.getTests():Test[]|null;
+```
+Returns an array of test results in the main process or `null` in a child process. Always check for `null` and do nothing if it is `null`. Only the master process should work with the result.

@@ -7,6 +7,16 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "Launch Main",
+            "skipFiles": [],
+            "program": "${workspaceFolder}",
+            "outFiles": [
+                "${workspaceFolder}/lib/**/*.js"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "Launch Tests",
             "skipFiles": [],
             "program": "${workspaceFolder}\\lib\\tests",

@@ -1,7 +1,8 @@
 import * as UTIL from "util";
 import type * as CRYPTO_T from "crypto";
 
-import { IsoBench, STRINGS } from "..";
+import { IsoBench } from "..";
+import { STRINGS } from "../STRINGS";
 
 const _consoleLog = console.log;
 function testLog(log:RegExp, ...logs:RegExp[]) { // Force typings at least 1 argument
@@ -31,7 +32,7 @@ function slowfast() {
         "test this".indexOf("s");
     });
     testLog(SLOW_REGEXP, FAST_REGEXP);
-    return bench.run();
+    return bench.run().then(result => result.console.log());
 }
 function fastslow() {
     _consoleLog("Testing fast-slow result comparison");
@@ -44,7 +45,7 @@ function fastslow() {
         /s/.test("test this");
     });
     testLog(FAST_REGEXP, SLOW_REGEXP);
-    return bench.run();
+    return bench.run().then(result => result.console.log());
 }
 
 (async function() {

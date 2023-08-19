@@ -1,12 +1,11 @@
 {
   "name": "iso-bench",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Small benchmark library focused in avoiding optimization/deoptimization pollution between tests by isolating them.",
-  "types": "./types/index.d.ts",
+  "types": "./lib/_types/index.d.ts",
   "main": "./lib/",
   "files": [
-    "lib/",
-    "types/"
+    "lib/"
   ],
   "keywords": [
     "benchmark",
@@ -21,8 +20,9 @@
     "benny"
   ],
   "scripts": {
-    "watch": "npx tsc --watch --inlineSourcemap",
-    "build": "npx tsc --project tsconfig.build.json"
+    "clean": "node -e \"(require('fs').rm||require('fs').rmdir)('lib', { recursive: true }, ()=>{});\"",
+    "watch": "npm run clean && npx tsc --watch --inlineSourcemap",
+    "build": "npm run clean && npx tsc --project tsconfig.build.json"
   },
   "author": "Llorx",
   "license": "ISC",
