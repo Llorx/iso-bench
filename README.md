@@ -128,7 +128,7 @@ Returns the IsoBench instance, to concatenate new tests easily.
 bench.run():Promise<Result>;
 ```
 Runs the tests and returns a `Promise` that will resolve when all the tests are completed. It will return a `Result` instance.
-# Result
+### Result
 This is the result of the benchmark. It will contain a list of the tests executed. Note that inside the forked processes, this result will not contain any test, as the main process should be the only one processing the results.
 ---
 ```typescript
