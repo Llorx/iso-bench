@@ -7,8 +7,8 @@ type SetupMessage = {
     benchName:string;
     cycles:number;
     warmUpCycles:number;
-    ms:number;
-    warmUpMs:number;
+    time:number;
+    warmUpTime:number;
     first:boolean;
 };
 type RunMessage = {
@@ -74,14 +74,14 @@ function updateIds(message:SetupMessage) {
 export type IsoBenchOptions = {
     parallel?:number;
     samples?:number;
-    ms?:number;
-    warmUpMs?:number;
+    time?:number;
+    warmUpTime?:number;
 };
 const defaultOptions:Required<IsoBenchOptions> = {
     parallel: 1,
     samples: 1,
-    ms: 3000,
-    warmUpMs: 500
+    time: 3000,
+    warmUpTime: 500
 };
 
 class Test {
@@ -91,7 +91,7 @@ class Test {
     warmUpCycles = 10;
     opMs = -1;
     totalTime = 0;
-    samples:{cycles: number, ms:number, ops:number}[] = [];
+    samples:{cycles: number, time:number, ops:number}[] = [];
     constructor(readonly name:string, readonly callback:()=>void) {}
 }
 export const enum STRINGS {
@@ -158,14 +158,14 @@ export class IsoBench {
         }
         return null;
     }
-    private _getTestResult(test:Test, targetMs:number, cycles:number) {
+    private _getTestResult(test:Test, targetTime:number, cycles:number) {
         let diff:number;
         while(true) {
             diff = this._runTest(test, cycles);
-            if (diff >= targetMs) {
+            if (diff >= targetTime) {
                 break;
             } else {
-                const ratio = (targetMs / diff) * 1.05;
+                const ratio = (targetTime / diff) * 1.05;
                 cycles = Math.round(cycles * ratio);
             }
         }
@@ -181,13 +181,13 @@ export class IsoBench {
                 if (!test) {
                     throw new Error("Test '" + setup.testName + "' not found");
                 }
-                const warmUpResult = setup.warmUpMs > 0 ? this._getTestResult(test, setup.warmUpMs, setup.warmUpCycles) : null;
+                const warmUpResult = setup.warmUpTime > 0 ? this._getTestResult(test, setup.warmUpTime, setup.warmUpCycles) : null;
                 if (setup.first && warmUpResult) {
                     // Use the warmup cycles to calculate the result cycles
-                    const ratio = (setup.warmUpMs / setup.ms) * 1.05;
+                    const ratio = (setup.warmUpTime / setup.time) * 1.05;
                     setup.cycles = warmUpResult.cycles * ratio;
                 }
-                const result = this._getTestResult(test, setup.ms, setup.cycles);
+                const result = this._getTestResult(test, setup.time, setup.cycles);
                 send(writeStream, {
                     diff: result.diff,
                     cycles: result.cycles,
@@ -243,7 +243,7 @@ export class IsoBench {
                     } else if (diff) {
                         test.samples.push({
                             cycles: test.cycles,
-                            ms: diff,
+                            time: diff,
                             ops: test.cycles / diff
                         });
                         const ops = test.cycles / diff;
@@ -268,8 +268,8 @@ export class IsoBench {
                 benchName: this.name,
                 cycles: test.cycles,
                 warmUpCycles: test.warmUpCycles,
-                ms: this.options.ms,
-                warmUpMs: this.options.warmUpMs,
+                time: this.options.time,
+                warmUpTime: this.options.warmUpTime,
                 first: test.samples.length === 0
             };
             send(worker.process.stdio[3]! as STREAM.Writable, setup);
