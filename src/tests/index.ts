@@ -1,1 +1,1 @@
-import "./general";
+import "./example";

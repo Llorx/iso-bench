@@ -21,9 +21,9 @@ const SLOW_REGEXP = new RegExp(`^slow.*1\\.000x \\(${STRINGS.WORSE}\\)$`);
 const FAST_REGEXP = new RegExp(`^fast.*x \\(${STRINGS.BEST}\\)$`);
 
 function slowfast() {
-    IsoBench.CallMaster(() => _consoleLog("Testing slow-fast result comparison"));
+    _consoleLog("Testing slow-fast result comparison");
     const bench = new IsoBench("My bench", {
-        ms: 100,
+        time: 100,
         parallel: 2
     }).add("slow", () => {
         /s/.test("test this");
@@ -34,9 +34,9 @@ function slowfast() {
     return bench.run();
 }
 function fastslow() {
-    IsoBench.CallMaster(() => _consoleLog("Testing fast-slow result comparison"));
+    _consoleLog("Testing fast-slow result comparison");
     const bench = new IsoBench("My bench", {
-        ms: 100,
+        time: 100,
         parallel: 2
     }).add("fast", () => {
         "test this".indexOf("s");
@@ -50,5 +50,5 @@ function fastslow() {
 (async function() {
     await slowfast();
     await fastslow();
-    IsoBench.CallMaster(() => _consoleLog("Tests completed"));
+    IsoBench.IfMaster(() => _consoleLog("Tests completed"));
 })();
