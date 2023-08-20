@@ -171,7 +171,7 @@ Processor methods:
 ```typescript
 initialize(bench:IsoBench, tests:Test[]):void;
 ```
-Will be called when the benchmark starts with the IsoBench instance and a test array of the tests that are going to be run, for initialization purposes. Optional.
+Will be called when the benchmark starts. Receives the IsoBench instance and a test array of the tests that are going to be run, for initialization purposes. Optional.
 
 ---
 ```typescript
@@ -195,7 +195,7 @@ Will be called when a Test has collected enough samples and can calculate the fi
 ```typescript
 completed(tests:Tests[]):void;
 ```
-Will be called with an array with all the tests (including the errored ones) when the benchmark is completed. Optional.
+Will be called when the benchmark is completed. Receives an array with all the tests (including the errored ones). Optional.
 
 ---
 Custom Processor example:
