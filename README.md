@@ -141,13 +141,13 @@ Returns the IsoBench instance, to concatenate new tests easily.
 ```typescript
 bench.consoleLog():this;
 ```
-Adds a built-in [Processor](#processor) that outputs the result in the console.
+Adds a built-in [Processor](#i-processor) that outputs the result in the console.
 
 ---
 ```typescript
 bench.addProcessor(processor:Processor):this;
 ```
-Adds a custom [Processor](#processor) that must implement the [Processor](#processor) interface.
+Adds a custom [Processor](#i-processor) that must implement the [Processor](#i-processor) interface.
 
 ---
 ```typescript

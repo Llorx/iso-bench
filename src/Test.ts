@@ -151,7 +151,7 @@ export class Test {
             if (diff >= targetTime) {
                 break;
             } else {
-                const ratio = (targetTime / diff) * 1.02; // Add a 2% extra, just in case it is not enough
+                const ratio = diff > 0 ? (targetTime / diff) * 1.02 : 1.1; // Go a 2% further, to avoid it ending just below the targetTime. Increase by 10% if zero is received (mostly in systems without nanosecond resolution)
                 cycles = Math.ceil(cycles * ratio);
             }
         }
