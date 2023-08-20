@@ -9,9 +9,9 @@
    1. [Processor](#i-processor)
 
 ## 1. Motivation
-I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them with V8 and memory optimizations/deoptimizations. After this, I decided to take advantage of forking to do tests in completely separated processes with their own V8 instances, memory and so on, to avoid present and future _optimization/deoptimization pollution_.
+I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them somehow. Maybe V8 optimizations/deoptimizations. After this, I decided to take advantage of forking to do tests in completely separated processes with their own V8 instances, memory and so on, to avoid present and future _optimization/deoptimization pollution_.
 
-All single threaded benchmark libraries, like [benny](https://github.com/caderek/benny) or [benchmark.js](https://github.com/bestiejs/benchmark.js) have this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem I had to redo some [PacoPack](https://github.com/Llorx/pacopack) code ☹️.
+All single threaded benchmark libraries, like [benny](https://github.com/caderek/benny) or [benchmark.js](https://github.com/bestiejs/benchmark.js) suffer this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem it was too late and I had to refactor some [PacoPack](https://github.com/Llorx/pacopack) code ☹️.
 
 ## 2. Pollution examples
 Running this test on `benchmark.js` will return different outcomes. Note how `method` and `method_again` run the very same exact code:
