@@ -130,13 +130,21 @@ Creates a new `IsoBench` instance to benchmark your code.
 
 ---
 ```typescript
-bench.add<T>(name:string, test:(setupReturn?:T)=>void, setup?:()=>T):this;
+bench.add(name:string, test:()=>void):this;
 ```
 Adds new test.
 - `name`: The name of this test.
 - `test`: The test function to run.
 Returns the IsoBench instance, to concatenate new tests easily.
 
+---
+```typescript
+bench.add<T>(name:string, test:(setupReturn:T)=>void, setup:()=>T):this;
+```
+Adds new test.
+- `name`: The name of this test.
+- `test`: The test function to run.
+- `setup`: The setup function to run before the test.
 If you are very concerned about the pollution between tests when preparing data that only one test needs, you can use the `setup` callback to return the data that will be provided to the `test` callback as the first argument. The other tests will not run this `setup` callback in their isolated processes. Example:
 ```typescript
 bench.add("object.result", (obj) => {
