@@ -6,24 +6,35 @@ import { STRINGS } from "../STRINGS";
 import { Test, Sample } from "../Test";
 import { IsoBench } from "../IsoBench";
 
-function _getTestLog(padding:number, test:Test, minMax?:{min:number, max:number}) {
+const enum COLORS {
+    CLEAR = "\x1b[0m",
+    GRAY = "\x1b[30m",
+    RED = "\x1b[31m",
+    GREEN = "\x1b[32m",
+    YELLOW = "\x1b[33m",
+    BLUE = "\x1b[36m"
+}
+function formatColor(str:string, color:COLORS, useColor:boolean) {
+    return useColor ? `${color}${str}${COLORS.CLEAR}` : str;
+}
+function _getTestLog(padding:number, test:Test, minMax?:{min:number, max:number}|null, useColor = false) {
     const logArgs:unknown[] = [test.name.padEnd(padding, " "), "-"];
     if (test.error) {
-        logArgs.push(test.error);
+        logArgs.push(formatColor(test.error, COLORS.RED, useColor));
     } else {
-        logArgs.push(Math.round(test.opMs*1000).toLocaleString());
+        logArgs.push(formatColor(Math.round(test.opMs*1000).toLocaleString(), COLORS.BLUE, useColor));
         if (test.samples.length > 1) {
-            logArgs.push("op/s.", test.samples.length, "samples in");
+            logArgs.push("op/s.", formatColor(String(test.samples.length), COLORS.BLUE, useColor), "samples in");
         } else {
             logArgs.push("op/s in");
         }
-        logArgs.push(Math.round(test.totalTime), "ms.");
+        logArgs.push(formatColor(String(Math.round(test.totalTime)), COLORS.BLUE, useColor), "ms.");
         if (minMax) {
-            logArgs.push(`${(test.opMs / minMax.min).toFixed(3)}x`);
+            logArgs.push(formatColor(`${(test.opMs / minMax.min).toFixed(3)}x`, COLORS.BLUE, useColor));
             if (test.opMs === minMax.min) {
-                logArgs.push(`(${STRINGS.WORSE})`);
+                logArgs.push(formatColor(`(${STRINGS.WORSE})`, COLORS.YELLOW, useColor));
             } else if (test.opMs === minMax.max) {
-                logArgs.push(`(${STRINGS.BEST})`);
+                logArgs.push(formatColor(`(${STRINGS.BEST})`, COLORS.GREEN, useColor));
             }
         }
     }
@@ -93,35 +104,35 @@ class DynamicStream implements Processor {
     initialize(bench:IsoBench, tests:Test[]) {
         this._benchName = bench.name;
         this._padding = Math.max(...tests.map(test => test.name.length));
-        this._header.log(STRINGS.INITIALIZED + " " + this._benchName);
+        this._header.log(`${COLORS.YELLOW}${STRINGS.INITIALIZED}${COLORS.CLEAR} ${this._benchName}`);
         for (let i = 0; i < tests.length; i++) {
             const output = new TestOutput(this._cursor, i + 1);
-            output.log(`${tests[i].name.padEnd(this._padding, " ")} - Waiting...`);
+            output.log(`${tests[i].name.padEnd(this._padding, " ")} - ${COLORS.GRAY}Paused${COLORS.CLEAR}`);
             this._outputs.set(tests[i].name, output);
         }
     }
     start(test:Test) {
         const output = this._outputs.get(test.name);
         if (output) {
-            output.log(`${test.name.padEnd(this._padding, " ")} - Running...`);
+            output.log(`${test.name.padEnd(this._padding, " ")} - ${COLORS.YELLOW}Running...${COLORS.CLEAR}`);
         }
     }
     end(test:Test) {
         const output = this._outputs.get(test.name);
         if (output) {
-            const logArgs = _getTestLog(this._padding, test);
+            const logArgs = _getTestLog(this._padding, test, null, true);
             output.log(logArgs.join(" "));
         }
     }
     completed(tests:Test[]): void {
-        this._header.log(STRINGS.COMPLETED + " " + this._benchName);
+        this._header.log(`${COLORS.GREEN}${STRINGS.COMPLETED}${COLORS.CLEAR} ${this._benchName}`);
         const ops = tests.map(test => test.opMs);
         const min = Math.min(...ops.filter(n => !!n));
         const max = Math.max(...ops.filter(n => !!n));
         for (const test of tests) {
             const output = this._outputs.get(test.name);
             if (output) {
-                const logArgs = _getTestLog(this._padding, test, { min, max });
+                const logArgs = _getTestLog(this._padding, test, { min, max }, true);
                 output.log(logArgs.join(" "));
             }
         }
