@@ -141,11 +141,12 @@ Returns the IsoBench instance, to concatenate new tests easily.
 ```typescript
 bench.add<T>(name:string, test:(setupReturn:T)=>void, setup:()=>T):this;
 ```
-Adds new test.
+Adds new test with an isolated setup callback.
 - `name`: The name of this test.
 - `test`: The test function to run.
-- `setup`: The setup function to run before the test.
-If you are very concerned about the pollution between tests when preparing data that only one test needs, you can use the `setup` callback to return the data that will be provided to the `test` callback as the first argument. The other tests will not run this `setup` callback in their isolated processes. Example:
+- `setup`: The setup function to run before the test. If you are very concerned about the pollution between tests when preparing data that only one test needs, you can use the `setup` callback to return the data that will be provided to the `test` callback as the first argument. The other tests will not run this `setup` callback in their isolated processes.
+
+Example:
 ```typescript
 bench.add("object.result", (obj) => {
   // Test callback receiving the obj from the setup callback
@@ -167,6 +168,12 @@ bench.add("object.result", (obj) => {
 bench.consoleLog():this;
 ```
 Adds a built-in [Processor](#i-processor) that outputs the result in the console. Returns the IsoBench instance.
+
+---
+```typescript
+bench.streamLog(stream:Stream.Writable):this;
+```
+Adds a built-in [Processor](#i-processor) that outputs the result in a writable stream, like a file or a socket. Returns the IsoBench instance.
 
 ---
 ```typescript

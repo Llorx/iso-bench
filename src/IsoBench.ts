@@ -1,9 +1,10 @@
 import FS from "fs";
+import STREAM from "stream";
 
 import { RunMessage, Test } from "./Test";
 import { WorkerSetup, SetupMessage } from "./WorkerSetup";
 import { Processor } from "./Processor";
-import { ConsoleLog } from "./processors";
+import { ConsoleLog, StreamLog } from "./processors";
 
 let IDs = 0;
 function getUniqueName(name:string, map:Map<string, unknown>) {
@@ -53,6 +54,9 @@ export class IsoBench {
     }
     consoleLog() {
         return this.addProcessor(new ConsoleLog());
+    }
+    streamLog(stream:STREAM.Writable) {
+        return this.addProcessor(new StreamLog(stream));
     }
     async run() {
         if (WorkerSetup) {
