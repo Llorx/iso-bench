@@ -19,7 +19,7 @@ export type Sample = {
     ops:number;
 };
 
-class ForkContext {
+class ForkContext<T> {
     private _ended = false;
     constructor(private _test:Test, private _processors:Processor[], private _resolve:()=>void, private _benchName:string, private _options:Required<IsoBenchOptions>) {}
     start() {
@@ -121,7 +121,7 @@ export class Test {
     opMs = 0;
     totalTime = 0;
     samples:Sample[] = [];
-    constructor(readonly name:string, private _callback:()=>void) {}
+    constructor(readonly name:string, private _callback:(setup?:unknown)=>void, private _setup?:()=>unknown) {}
     fork(benchName:string, processors:Processor[], options:Required<IsoBenchOptions>) {
         return new Promise<void>((resolve => {
             // Start new context for this specific fork run
@@ -158,10 +158,20 @@ export class Test {
         return {cycles, diff};
     }
     private _getCallbackTime(cycles:number) {
-        const startTS = process.hrtime.bigint();
-        while(cycles-- > 0) {
-            this._callback();
+        // Individual loops so the callback doesn't receive an argument if there's no setup
+        if (this._setup) {
+            const setup = this._setup();
+            const startTS = process.hrtime.bigint();
+            while(cycles-- > 0) {
+                this._callback(setup);
+            }
+            return Number(process.hrtime.bigint() - startTS) / 1000000;
+        } else {
+            const startTS = process.hrtime.bigint();
+            while(cycles-- > 0) {
+                this._callback();
+            }
+            return Number(process.hrtime.bigint() - startTS) / 1000000;
         }
-        return Number(process.hrtime.bigint() - startTS) / 1000000;
     }
 }

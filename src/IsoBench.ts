@@ -40,9 +40,11 @@ export class IsoBench {
             cb();
         }
     }
-    add(name:string, callback:()=>void) {
+    add(name:string, callback:()=>void):this;
+    add<T>(name:string, callback:(setup:T)=>void, setup:()=>T):this;
+    add(name:string, callback:(setup?:any)=>void, setup?:()=>any) {
         name = getUniqueName(name, this.tests);
-        this.tests.set(name, new Test(name, callback));
+        this.tests.set(name, new Test(name, callback, setup));
         return this;
     }
     addProcessor(processor:Processor) {

@@ -9,9 +9,9 @@
    1. [Processor](#i-processor)
 
 ## 1. Motivation
-I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them somehow. Maybe V8 optimizations/deoptimizations. After this, I decided to take advantage of forking to do tests in completely separated processes with their own V8 instances, memory and so on, to avoid present and future _optimization/deoptimization pollution_.
+I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them somehow. V8 optimizations/deoptimizations maybe? I decided to take advantage of forking to do tests in completely separated processes with their own V8 instances, memory and so on, to avoid present and future _optimization/deoptimization pollution_.
 
-All single threaded benchmark libraries, like [benny](https://github.com/caderek/benny) or [benchmark.js](https://github.com/bestiejs/benchmark.js) suffer this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem it was too late and I had to refactor some [PacoPack](https://github.com/Llorx/pacopack) code ☹️.
+All single threaded benchmark libraries, like [benny](https://github.com/caderek/benny) or [benchmark.js](https://github.com/bestiejs/benchmark.js) suffer this problem, so you may had this pollution on your tests and you didn't even notice, just thinking that one test was faster than the other. This happened to me, and when I noticed the problem it was too late and I had to refactor some [PacoPack](https://github.com/Llorx/pacopack) code ☹️
 
 ## 2. Pollution examples
 Running this test on `benchmark.js` will return different outcomes. Note how `method` and `method_again` run the very same exact code:
@@ -90,9 +90,9 @@ bench.consoleLog().run();
 ```
 Which yields these results with zero pollution:
 ```typescript
-method       - 1.714.953 op/s in 3140 ms. 1.009x (BEST)
-direct       - 1.712.045 op/s in 3032 ms. 1.008x
-method_again - 1.699.022 op/s in 3128 ms. 1.000x (WORSE)
+method       - 1.714.953 op/s.
+direct       - 1.712.045 op/s.
+method_again - 1.699.022 op/s.
 ```
 
 ## 3. Installation
@@ -130,12 +130,29 @@ Creates a new `IsoBench` instance to benchmark your code.
 
 ---
 ```typescript
-bench.add(name, test):this;
+bench.add<T>(name:string, test:(setupReturn?:T)=>void, setup?:()=>T):this;
 ```
 Adds new test.
 - `name`: The name of this test.
 - `test`: The test function to run.
 Returns the IsoBench instance, to concatenate new tests easily.
+
+If you are very concerned about the pollution between tests when preparing data that only one test needs, you can use the `setup` callback to return the data that will be provided to the `test` callback as the first argument. The other tests will not run this `setup` callback in their isolated processes. Example:
+```typescript
+bench.add("object.result", (obj) => {
+  // Test callback receiving the obj from the setup callback
+  object.result = object.result + 1;
+}, () => {
+  // Setup callback
+  let objResult = 0;
+  return Object.defineProperties({}, {
+      result: {
+        get: () => objResult,
+        set: (res) => objResult = res
+      }
+  });
+})
+```
 
 ---
 ```typescript
