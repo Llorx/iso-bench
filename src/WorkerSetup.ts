@@ -7,7 +7,6 @@ export type SetupMessage = {
     warmUpCycles:number;
     time:number;
     warmUpTime:number;
-    first:boolean;
 };
 
 export let WorkerSetup:SetupMessage|null = null;

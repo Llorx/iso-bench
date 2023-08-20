@@ -2,12 +2,11 @@ import FS from "fs";
 
 import { RunMessage, Test } from "./Test";
 import { WorkerSetup, SetupMessage } from "./WorkerSetup";
-import { Result } from "./Result";
 import { Processor } from "./Processor";
 import { ConsoleLog } from "./processors";
 
 let IDs = 0;
-function getUniqueName(name:string, map:Map<string, any>) {
+function getUniqueName(name:string, map:Map<string, unknown>) {
     let newName = name;
     while (map.has(newName)) {
         newName = `${name}_${IDs++}`;
@@ -59,18 +58,27 @@ export class IsoBench {
             this._start(WorkerSetup);
         } else {
             // If is the master, run all test forks
-            const tests = this._nextTest();
+            let i = 0;
+            const tests = Array.from(this.tests.values());
+            for (const processor of this.processors) {
+                processor.initialize && processor.initialize(this, tests);
+            }
             await Promise.all(new Array(this.options.parallel).fill(0).map(async () => {
-                for (const test of tests) {
-                    await test.fork(this.name, this.options);
+                while (i < tests.length) {
+                    const test = tests[i++];
+                    for (const processor of this.processors) {
+                        processor.start && processor.start(test);
+                    }
+                    await test.fork(this.name, this.processors, this.options);
+                    for (const processor of this.processors) {
+                        processor.end && processor.end(test);
+                    }
                 }
             }));
+            for (const processor of this.processors) {
+                processor.completed && processor.completed(tests);
+            }
         }
-        const result = new Result(WorkerSetup ? null : Array.from(this.tests.values()));
-        for (const processor of this.processors) {
-            processor.end && processor.end(result);
-        }
-        return result;
     }
     private _start(setup:SetupMessage) {
         if (this.name === setup.benchName) { // Wait for the specific test this fork should run
@@ -91,12 +99,5 @@ export class IsoBench {
             bufferLength.writeUint16LE(buffer.length);
             FS.createWriteStream("", {fd: 3}).write(Buffer.concat([bufferLength, buffer]), () => process.exit());
         }
-    }
-    private* _nextTest() {
-        const tests = Array.from(this.tests.values());
-        while (tests.length > 0) {
-            yield tests.shift()!;
-        }
-        return null;
     }
 }

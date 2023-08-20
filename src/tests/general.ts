@@ -7,7 +7,7 @@ import { STRINGS } from "../STRINGS";
 const _consoleLog = console.log;
 function testLog(log:RegExp, ...logs:RegExp[]) { // Force typings at least 1 argument
     logs.unshift(log);
-    console.log = (...args:any[]) => {
+    console.log = (...args:unknown[]) => {
         let str = UTIL.formatWithOptions({ colors: false }, new Array(args.length).fill("%s").join(" "), ...args.map(el => el instanceof Buffer ? UTIL.inspect(el) : el));
         let log = logs.shift()!;
         if (!log.test(str)) {

@@ -1,29 +1,18 @@
 import { IsoBench } from "..";
-const functions = {
-  method: function(buf:Buffer) {
-      return buf.readUint8(0);
-  },
-  direct: function(buf:Buffer) {
-      return buf[0];
-  },
-  method_again: function(buf:Buffer) {
-      return buf.readUint8(0);
-  }
-};
-const buffers = new Array(1000).fill(0).map(() => {
-  const buf = Buffer.allocUnsafe(1);
-  buf[0] = Math.floor(Math.random() * 0xFF);
-  return buf;
-});
 
-const bench = new IsoBench("test", {
-  parallel: 4
+const dates = new Array(1000).fill(0).map(() => new Date(Math.floor(Date.now() - (Math.random() * 1000000000))));
+
+const bench = new IsoBench("test");
+bench.add("iso", () => {
+  let res = 0;
+  for (const date of dates) {
+    res += Buffer.byteLength(date.toISOString());
+  }
 });
-for (const [type, fn] of Object.entries(functions)) {
-  bench.add(`${type}`, () => {
-      for (let i = 0; i < buffers.length; i++) {
-          fn(buffers[i]);
-      }
-  });
-}
+bench.add("calc", () => {
+  let res = 0;
+  for (const date of dates) {
+    res += Buffer.byteLength(`${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}T${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}:${String(date.getUTCSeconds()).padStart(2, "0")}.${String(date.getUTCMilliseconds()).padStart(3, "0")}`);
+  }
+});
 bench.consoleLog().run();

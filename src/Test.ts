@@ -3,7 +3,7 @@ import CHILD_PROCESS from "child_process";
 
 import { STRINGS } from "./STRINGS";
 import { Fork } from "./Fork";
-import { IsoBenchOptions } from ".";
+import { IsoBenchOptions, Processor } from ".";
 import { SetupMessage } from "./WorkerSetup";
 
 export type RunMessage = {
@@ -13,10 +13,15 @@ export type RunMessage = {
     cycles:number;
     warmUpCycles:number;
 };
+export type Sample = {
+    cycles: number;
+    time:number;
+    ops:number;
+};
 
 class ForkContext {
     private _ended = false;
-    constructor(private _test:Test, private _resolve:()=>void, private _benchName:string, private _options:Required<IsoBenchOptions>) {}
+    constructor(private _test:Test, private _processors:Processor[], private _resolve:()=>void, private _benchName:string, private _options:Required<IsoBenchOptions>) {}
     start() {
         // Start worker
         const setup:SetupMessage = {
@@ -25,8 +30,7 @@ class ForkContext {
             cycles: this._test.cycles,
             warmUpCycles: this._test.warmUpCycles,
             time: this._options.time,
-            warmUpTime: this._options.warmUpTime,
-            first: this._test.samples.length === 0
+            warmUpTime: this._options.warmUpTime
         };
         const worker = Fork.fork({
             [STRINGS.ISO_BENCH_SETUP]: JSON.stringify(setup)
@@ -48,19 +52,21 @@ class ForkContext {
                 this._test.error = error;
                 this._resolve();
             } else if (diff) {
-                this._test.samples.push({
+                const sample:Sample = {
                     cycles: this._test.cycles,
                     time: diff,
                     ops: this._test.cycles / diff
-                });
-                const ops = this._test.cycles / diff;
-                this._test.opMs = this._test.opMs < 0 ? ops : (this._test.opMs + ops) / 2;
+                };
+                this._test.samples.push(sample);
+                for (const processor of this._processors) {
+                    processor.sample && processor.sample(this._test, sample);
+                }
                 this._test.totalTime += diff;
                 if (this._test.samples.length >= this._options.samples) {
                     this._test.opMs = this._test.samples.reduce((total, sample) => total + sample.ops, 0) / this._test.samples.length; 
                     this._resolve();
                 } else {
-                    this.start();
+                    new ForkContext(this._test, this._processors, this._resolve, this._benchName, this._options).start();
                 }
             }
         }
@@ -110,23 +116,22 @@ class ForkContext {
 }
 export class Test {
     error:string|null = null;
-    log:any[] = [];
     cycles = 1;
     warmUpCycles = 1;
-    opMs = -1;
+    opMs = 0;
     totalTime = 0;
-    samples:{cycles: number, time:number, ops:number}[] = [];
+    samples:Sample[] = [];
     constructor(readonly name:string, private _callback:()=>void) {}
-    fork(benchName:string, options:Required<IsoBenchOptions>) {
+    fork(benchName:string, processors:Processor[], options:Required<IsoBenchOptions>) {
         return new Promise<void>((resolve => {
             // Start new context for this specific fork run
-            const forkContext = new ForkContext(this, resolve, benchName, options);
+            const forkContext = new ForkContext(this, processors, resolve, benchName, options);
             forkContext.start();
         }));
     }
     run(setup:SetupMessage) {
         const warmUpResult = setup.warmUpTime > 0 ? this._getResult(setup.warmUpTime, setup.warmUpCycles) : null;
-        if (setup.first && warmUpResult) {
+        if (warmUpResult && warmUpResult.cycles !== setup.warmUpCycles) {
             // Use the warmup cycles to calculate the result cycles
             const ratio = (setup.warmUpTime / setup.time) * 1.02;
             setup.cycles = warmUpResult.cycles * ratio;

@@ -1,4 +1,5 @@
 export const enum STRINGS {
+    INITIALIZED = "[TESTS INITIALIZED]",
     WORSE = "WORSE",
     BEST = "BEST",
     COMPLETED = "[TESTS COMPLETED]",

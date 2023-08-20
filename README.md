@@ -6,8 +6,7 @@
 1. [Installation](#3-installation)
 1. [Usage](#4-usage)
 1. [Documentation](#5-documentation)
-   1. [Result](#i-result)
-   1. [Processor](#ii-processor)
+   1. [Processor](#i-processor)
 
 ## 1. Motivation
 I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them with V8 and memory optimizations/deoptimizations. After this, I decided to take advantage of forking to do tests in completely separated processes with their own V8 instances, memory and so on, to avoid present and future _optimization/deoptimization pollution_.
@@ -152,44 +151,62 @@ Adds a custom [Processor](#processor) that must implement the [Processor](#proce
 
 ---
 ```typescript
-bench.run():Promise<Result>;
+bench.run():Promise<void>;
 ```
-Runs the tests and returns a `Promise` that will resolve when all the tests are completed. It will return a [Result](#result) instance.
+Runs the tests and returns a `Promise` that will resolve when all the tests are completed.
 
-### i. Result
-This is the result of the benchmark. It will contain a list of the tests executed. Note that inside the forked processes, this result will not contain any test (`getTests()` will return `null`), as the main process should be the only one processing the results.
-
----
-```typescript
-result.getTests():Test[]|null;
-```
-Returns an array of test results in the main process or `null` in a child process. Always check for `null` and do nothing if it is `null`. Only the master process should work with the result.
-
-### ii. Processor
+### i. Processor
 Processors will receive the benchmark events to process them. They must implement the Processor interface:
 ```typescript
 export interface Processor {
-    end?(result:Result):void;
+    initialize?(bench:IsoBench, tests:Test[]):void;
+    start?(test:Test):void;
+    sample?(test:Test, sample:Sample):void;
+    end?(test:Test):void;
+    completed?(tests:Tests[]):void;
 }
 ```
 
 Processor methods:
 ```typescript
-end(result:Result):void;
+initialize(bench:IsoBench, tests:Test[]):void;
 ```
-Will be called with a [Result](#result) instance when the benchmark ends. Optional.
+Will be called when the benchmark starts with the IsoBench instance and a test array of the tests that are going to be run, for initialization purposes. Optional.
+
+---
+```typescript
+start(test:Test):void;
+```
+Will be called when a Test starts to run. Optional.
+
+---
+```typescript
+sample(test:Test, sample:Sample):void;
+```
+Will be called when a new Sample is added to a Test. Optional.
+
+---
+```typescript
+end(test:Test):void;
+```
+Will be called when a Test has collected enough samples and can calculate the final result or when a test fails (check for the `test.error` property). Optional.
+
+---
+```typescript
+completed(tests:Tests[]):void;
+```
+Will be called with an array with all the tests (including the errored ones) when the benchmark is completed. Optional.
 
 ---
 Custom Processor example:
 ```typescript
-import { Processor, Result } from "iso-bench";
+import { Processor, Test } from "iso-bench";
 class MyProcessor implements Processor {
-    end(result:Result) {
-        const tests = result.getTests();
-        if (tests) {
-            console.log(tests);
-            // TODO: Work with the tests[] array
-        }
+    end(test:Test) {
+        console.log(test);
+    }
+    completed(tests:Tests[]) {
+        console.log(tests);
     }
 }
 ```
