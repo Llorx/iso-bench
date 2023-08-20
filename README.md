@@ -118,10 +118,10 @@ bench.add("indexOf", () => {
 
 ## 5. Documentation
 ```typescript
-new IsoBench(name, options?);
+new IsoBench(name?:string, options?:IsoBenchOptions);
 ```
-Creates a new `IsoBench` to add tests.
-- `name`: The name of this IsoBench instance. Optional.
+Creates a new `IsoBench` instance to benchmark your code.
+- `name`: The name of this IsoBench instance. Defaults to `IsoBench`.
 - `options`: Object:
     - `parallel`: The amount of parallel tests to run. Defaults to **1**.
     - `time`: The minimum time (in milliseconds) to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `ms` between tests to take samples. Defaults to **3000**.
@@ -141,19 +141,19 @@ Returns the IsoBench instance, to concatenate new tests easily.
 ```typescript
 bench.consoleLog():this;
 ```
-Adds a built-in [Processor](#i-processor) that outputs the result in the console.
+Adds a built-in [Processor](#i-processor) that outputs the result in the console. Returns the IsoBench instance.
 
 ---
 ```typescript
 bench.addProcessor(processor:Processor):this;
 ```
-Adds a custom [Processor](#i-processor) that must implement the [Processor](#i-processor) interface.
+Adds a custom [Processor](#i-processor) that must implement the [Processor](#i-processor) interface. Returns the IsoBench instance.
 
 ---
 ```typescript
 bench.run():Promise<void>;
 ```
-Runs the tests and returns a `Promise` that will resolve when all the tests are completed.
+Start running the tests. Returns a `Promise` that will resolve when all the tests are completed.
 
 ### i. Processor
 Processors will receive the benchmark events to process them. They must implement the Processor interface:
@@ -189,7 +189,7 @@ Will be called when a new Sample is added to a Test. Optional.
 ```typescript
 end(test:Test):void;
 ```
-Will be called when a Test has collected enough samples and can calculate the final result or when a test fails (check for the `test.error` property). Optional.
+Will be called when a Test has collected enough samples and can calculate the final result, or when a test fails (check for the `test.error` property). Optional.
 
 ---
 ```typescript
