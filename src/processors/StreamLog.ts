@@ -220,7 +220,7 @@ class DynamicStream implements Processor {
 }
 export class StreamLog implements Processor {
     private _log:Processor;
-    constructor(stream:STREAM.Writable) {
+    constructor(stream:STREAM.Writable|TTY.WriteStream) {
         this._log = ("isTTY" in stream && stream.isTTY) ? new DynamicStream(stream as TTY.WriteStream) : new StaticStream(stream);
     }
     initialize(bench:IsoBench, tests:Test[]) {
