@@ -58,12 +58,12 @@ class ForkContext<T> {
                     ops: this._test.cycles / diff
                 };
                 this._test.samples.push(sample);
+                this._test.totalTime += diff;
+                this._test.opMs = this._test.samples.reduce((total, sample) => total + sample.ops, 0) / this._test.samples.length;
                 for (const processor of this._processors) {
                     processor.sample && processor.sample(this._test, sample);
                 }
-                this._test.totalTime += diff;
                 if (this._test.samples.length >= this._options.samples) {
-                    this._test.opMs = this._test.samples.reduce((total, sample) => total + sample.ops, 0) / this._test.samples.length; 
                     this._resolve();
                 } else {
                     new ForkContext(this._test, this._processors, this._resolve, this._benchName, this._options).start();
