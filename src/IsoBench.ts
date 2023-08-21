@@ -53,6 +53,9 @@ export class IsoBench {
         return this;
     }
     addProcessor(processor:Processor) {
+        if (WorkerSetup) {
+            return this;
+        }
         if (this.running) {
             throw new Error("Can't add processors to a running bench");
         }
@@ -60,9 +63,15 @@ export class IsoBench {
         return this;
     }
     consoleLog() {
+        if (WorkerSetup) {
+            return this;
+        }
         return this.addProcessor(new ConsoleLog());
     }
     streamLog(stream:STREAM.Writable) {
+        if (WorkerSetup) {
+            return this;
+        }
         return this.addProcessor(new StreamLog(stream));
     }
     async run() {
