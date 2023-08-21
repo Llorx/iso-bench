@@ -24,7 +24,7 @@ export type IsoBenchOptions = {
 };
 export class IsoBench {
     processors:Processor[] = [];
-    tests = new Map<string, Test>();
+    tests:Test[] = [];
     options:Required<IsoBenchOptions>;
     running = false;
     constructor(readonly name:string = "IsoBench", options?:IsoBenchOptions) {
@@ -48,8 +48,8 @@ export class IsoBench {
         if (this.running) {
             throw new Error("Can't add tests to a running bench");
         }
-        name = getUniqueName(name, this.tests);
-        this.tests.set(name, new Test(name, callback, setup));
+        const test = new Test(name, this.tests.length, callback, setup);
+        this.tests.push(test);
         return this;
     }
     addProcessor(processor:Processor) {

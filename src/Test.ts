@@ -25,7 +25,7 @@ class ForkContext<T> {
     start() {
         // Start worker
         const setup:SetupMessage = {
-            testName: this._test.name,
+            testI: this._test.index,
             benchName: this._benchName,
             cycles: this._test.cycles,
             warmUpCycles: this._test.warmUpCycles,
@@ -122,6 +122,7 @@ export class Test {
     totalTime = 0;
     samples:Sample[] = [];
     constructor(readonly name:string, private _callback:(setup?:unknown)=>void, private _setup?:()=>unknown) {}
+    constructor(readonly name:string, readonly index:number, private _callback:(setup?:unknown)=>void, private _setup?:()=>unknown) {}
     fork(benchName:string, processors:Processor[], options:Required<IsoBenchOptions>) {
         return new Promise<void>((resolve => {
             // Start new context for this specific fork run

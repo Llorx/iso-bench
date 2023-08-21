@@ -93,7 +93,7 @@ class TestOutput {
 }
 class DynamicStream implements Processor {
     private _padding = 0;
-    private _outputs = new Map<string, TestOutput>;
+    private _outputs = new Map<number, TestOutput>;
     private _header;
     private _cursor;
     private _benchName = "";
@@ -113,12 +113,13 @@ class DynamicStream implements Processor {
     }
     start(test:Test) {
         const output = this._outputs.get(test.name);
+        const output = this._outputs.get(test.index);
         if (output) {
             output.log(`${test.name.padEnd(this._padding, " ")} - ${COLORS.YELLOW}Running...${COLORS.CLEAR}`);
         }
     }
     end(test:Test) {
-        const output = this._outputs.get(test.name);
+        const output = this._outputs.get(test.index);
         if (output) {
             const logArgs = _getTestLog(this._padding, test, null, true);
             output.log(logArgs.join(" "));

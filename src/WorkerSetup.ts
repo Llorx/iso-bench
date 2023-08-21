@@ -1,7 +1,7 @@
 import { STRINGS } from "./STRINGS";
 
 export type SetupMessage = {
-    testName:string;
+    testI:number;
     benchName:string;
     cycles:number;
     warmUpCycles:number;
