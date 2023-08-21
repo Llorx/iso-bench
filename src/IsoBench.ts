@@ -25,6 +25,7 @@ export type IsoBenchOptions = {
 export class IsoBench {
     processors:Processor[] = [];
     tests:Test[] = [];
+    currentTests:Test[] = [];
     options:Required<IsoBenchOptions>;
     running = false;
     constructor(readonly name:string = "IsoBench", options?:IsoBenchOptions) {
@@ -50,6 +51,7 @@ export class IsoBench {
         }
         const test = new Test(name, this.tests.length, callback, setup);
         this.tests.push(test);
+        this.currentTests.push(test);
         return this;
     }
     addProcessor(processor:Processor) {
@@ -74,18 +76,29 @@ export class IsoBench {
         }
         return this.addProcessor(new StreamLog(stream));
     }
+    endGroup(name:string) {
+        for (const test of this.currentTests.splice(0)) {
+            test.group = name;
+        }
+        return this;
+    }
     async run() {
         if (this.running) {
             throw new Error("Already running");
         }
         this.running = true;
+        this.endGroup("");
         if (WorkerSetup) {
             // If is a fork, try to run the specific test
             this._start(WorkerSetup);
         } else {
             // If is the master, run all test forks
+            if (this.processors.length === 0) {
+                // Show output to console if no processor is added
+                this.consoleLog();
+            }
             let i = 0;
-            const tests = Array.from(this.tests.values());
+            const tests = this.tests.slice();
             for (const processor of this.processors) {
                 processor.initialize && processor.initialize(this, tests);
             }
@@ -110,9 +123,9 @@ export class IsoBench {
         if (this.name === setup.benchName) { // Wait for the specific test this fork should run
             let sendData:RunMessage;
             try {
-                const test = this.tests.get(setup.testName);
+                const test = this.tests[setup.testI];
                 if (!test) {
-                    throw new Error("Test '" + setup.testName + "' not found");
+                    throw new Error("Test index " + setup.testI + " not found");
                 }
                 sendData = test.run(setup);
             } catch (e) {

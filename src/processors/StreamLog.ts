@@ -17,7 +17,7 @@ const enum COLORS {
 function formatColor(str:string, color:COLORS, useColor:boolean) {
     return useColor ? `${color}${str}${COLORS.CLEAR}` : str;
 }
-function _getTestLog(padding:number, test:Test, minMax?:{min:number, max:number}|null, useColor = false) {
+function _getTestLog(padding:number, test:Test, minMax:{min:number, max:number}|null, useColor:boolean) {
     const logArgs:unknown[] = [test.name.padEnd(padding, " "), "-"];
     if (test.error) {
         logArgs.push(formatColor(test.error, COLORS.RED, useColor));
@@ -40,27 +40,57 @@ function _getTestLog(padding:number, test:Test, minMax?:{min:number, max:number}
     }
     return logArgs;
 }
+type Group = {
+    name:string;
+    tests:Test[];
+    started:number;
+    ended:number;
+    output?:TestOutput;
+};
 class StaticStream implements Processor {
     private _padding = 0;
+    private _groups = new Map<string, Group>();
     constructor(protected _stream:STREAM.Writable) {}
     initialize(bench:IsoBench, tests:Test[]) {
+        for (const test of tests) {
+            const group = this._groups.get(test.group);
+            if (group) {
+                group.tests.push(test);
+            } else {
+                this._groups.set(test.group, {
+                    name: test.group,
+                    tests: [test],
+                    started: 0,
+                    ended: 0
+                });
+            }
+        }
         this._padding = Math.max(...tests.map(test => test.name.length));
-        this._stream.write(STRINGS.INITIALIZED + " " + bench.name + "\n");
+        this._stream.write(`[ISOBENCH INITIALIZED] ${bench.name}\n`);
     }
     end(test:Test) {
-        const logArgs = _getTestLog(this._padding, test);
-        this._stream.write(logArgs.join(" ") + "\n");
+        const group = this._groups.get(test.group);
+        if (group) {
+            group.ended++;
+            if (group.ended === group.tests.length) {
+                this._completedGroup(group);
+            }
+        }
     }
-    completed(tests:Test[]) {
-        this._stream.write("---" + "\n");
-        this._stream.write(STRINGS.COMPLETED + "\n");
-        const ops = tests.map(test => test.opMs);
+    private _completedGroup(group:Group) {
+        if (this._groups.size > 1 || group.name) {
+            this._stream.write(`[GROUP COMPLETED] ${group.name}\n`);
+        }
+        const ops = group.tests.map(test => test.opMs);
         const min = Math.min(...ops.filter(n => !!n));
         const max = Math.max(...ops.filter(n => !!n));
-        for (const test of tests) {
-            const logArgs = _getTestLog(this._padding, test, { min, max });
+        for (const test of group.tests) {
+            const logArgs = _getTestLog(this._padding, test, { min, max }, false);
             this._stream.write(logArgs.join(" ") + "\n");
         }
+    }
+    completed() {
+        this._stream.write("[ISOBENCH COMPLETED]\n");
     }
 }
 class Cursor {
@@ -97,25 +127,62 @@ class DynamicStream implements Processor {
     private _header;
     private _cursor;
     private _benchName = "";
+    private _groups = new Map<string, Group>();
     constructor(protected _stream:TTY.WriteStream) {
         this._cursor = new Cursor(this._stream);
         this._header = new TestOutput(this._cursor, 0);
     }
     initialize(bench:IsoBench, tests:Test[]) {
+        let firstGroupName = "";
+        for (const test of tests) {
+            const group = this._groups.get(test.group);
+            if (group) {
+                group.tests.push(test);
+            } else {
+                firstGroupName = test.group;
+                this._groups.set(test.group, {
+                    name: test.group,
+                    tests: [test],
+                    started: 0,
+                    ended: 0
+                });
+            }
+        }
         this._benchName = bench.name;
         this._padding = Math.max(...tests.map(test => test.name.length));
-        this._header.log(`${COLORS.YELLOW}${STRINGS.INITIALIZED}${COLORS.CLEAR} ${this._benchName}`);
-        for (let i = 0; i < tests.length; i++) {
-            const output = new TestOutput(this._cursor, i + 1);
-            output.log(`${tests[i].name.padEnd(this._padding, " ")} - ${COLORS.GRAY}Paused${COLORS.CLEAR}`);
-            this._outputs.set(tests[i].name, output);
+        let line = 1;
+        this._header.log(`${COLORS.YELLOW}[ISOBENCH INITIALIZED]${COLORS.CLEAR} ${this._benchName}`);
+        for (const group of this._groups.values()) {
+            if (this._groups.size > 1 || group.name) {
+                group.output = new TestOutput(this._cursor, line++);
+                group.output.log(`${COLORS.GRAY}[GROUP PAUSED]${COLORS.CLEAR} ${group.name}`);
+            }
+            for (const test of group.tests) {
+                const output = new TestOutput(this._cursor, line++);
+                output.log(`${test.name.padEnd(this._padding, " ")} - ${COLORS.GRAY}Paused${COLORS.CLEAR}`);
+                this._outputs.set(test.index, output);
+            }
         }
     }
     start(test:Test) {
-        const output = this._outputs.get(test.name);
+        const group = this._groups.get(test.group);
+        if (group) {
+            group.started++;
+            if (group.started === 1 && group.output) {
+                group.output.log(`${COLORS.YELLOW}[GROUP INITIALIZED]${COLORS.CLEAR} ${group.name}`);
+            }
+        }
         const output = this._outputs.get(test.index);
         if (output) {
             output.log(`${test.name.padEnd(this._padding, " ")} - ${COLORS.YELLOW}Running...${COLORS.CLEAR}`);
+        }
+    }
+    sample(test:Test, sample:Sample) {
+        const output = this._outputs.get(test.index);
+        if (output) {
+            const logArgs = _getTestLog(this._padding, test, null, true);
+            logArgs.push(`${COLORS.YELLOW}Running...${COLORS.CLEAR}`);
+            output.log(logArgs.join(" "));
         }
     }
     end(test:Test) {
@@ -124,19 +191,31 @@ class DynamicStream implements Processor {
             const logArgs = _getTestLog(this._padding, test, null, true);
             output.log(logArgs.join(" "));
         }
+        const group = this._groups.get(test.group);
+        if (group) {
+            group.ended++;
+            if (group.ended === group.tests.length) {
+                this._completedGroup(group);
+            }
+        }
     }
-    completed(tests:Test[]): void {
-        this._header.log(`${COLORS.GREEN}${STRINGS.COMPLETED}${COLORS.CLEAR} ${this._benchName}`);
-        const ops = tests.map(test => test.opMs);
+    private _completedGroup(group:Group) {
+        if (group.output) {
+            group.output.log(`${COLORS.GREEN}[GROUP ENDED]${COLORS.CLEAR} ${group.name}`);
+        }
+        const ops = group.tests.map(test => test.opMs);
         const min = Math.min(...ops.filter(n => !!n));
         const max = Math.max(...ops.filter(n => !!n));
-        for (const test of tests) {
-            const output = this._outputs.get(test.name);
+        for (const test of group.tests) {
+            const output = this._outputs.get(test.index);
             if (output) {
                 const logArgs = _getTestLog(this._padding, test, { min, max }, true);
                 output.log(logArgs.join(" "));
             }
         }
+    }
+    completed(tests:Test[]): void {
+        this._header.log(`${COLORS.GREEN}[ISOBENCH ENDED]${COLORS.CLEAR} ${this._benchName}`);
     }
 }
 export class StreamLog implements Processor {

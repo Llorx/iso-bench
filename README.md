@@ -165,6 +165,33 @@ bench.add("object.result", (obj) => {
 
 ---
 ```typescript
+bench.endGroup(name:string):this;
+```
+Groups the tests added up to this point. The result comparator will be done only between tests in the same group. Example:
+```typescript
+import { IsoBench } from "iso-bench";
+
+const bench = new IsoBench("My bench");
+bench.add("indexOf", () => {
+    "thisisastring".indexOf("a") > -1;
+})
+.add("RegExp", () => {
+    /a/.test("thisisastring");
+})
+.endGroup("small string") // First group
+.add("indexOf", () => {
+    "thisisastring thisisastring".indexOf("a") > -1;
+})
+.add("RegExp", () => {
+    /a/.test("thisisastring thisisastring");
+})
+.endGroup("big string") // Second group
+.consoleLog()
+.run();
+```
+
+---
+```typescript
 bench.consoleLog():this;
 ```
 Adds a built-in [Processor](#i-processor) that outputs the result in the console. Returns the IsoBench instance.
