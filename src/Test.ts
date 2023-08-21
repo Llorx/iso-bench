@@ -121,7 +121,6 @@ export class Test {
     opMs = 0;
     totalTime = 0;
     samples:Sample[] = [];
-    constructor(readonly name:string, private _callback:(setup?:unknown)=>void, private _setup?:()=>unknown) {}
     constructor(readonly name:string, readonly index:number, private _callback:(setup?:unknown)=>void, private _setup?:()=>unknown) {}
     fork(benchName:string, processors:Processor[], options:Required<IsoBenchOptions>) {
         return new Promise<void>((resolve => {
@@ -134,7 +133,7 @@ export class Test {
         const warmUpResult = setup.warmUpTime > 0 ? this._getResult(setup.warmUpTime, setup.warmUpCycles) : null;
         if (warmUpResult && warmUpResult.cycles !== setup.warmUpCycles) {
             // Use the warmup cycles to calculate the result cycles
-            const ratio = (setup.warmUpTime / setup.time) * 1.02;
+            const ratio = (setup.time / setup.warmUpTime) * 1.02;
             setup.cycles = warmUpResult.cycles * ratio;
         }
         const result = this._getResult(setup.time, setup.cycles);
