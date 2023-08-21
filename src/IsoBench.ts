@@ -26,6 +26,7 @@ export class IsoBench {
     processors:Processor[] = [];
     tests = new Map<string, Test>();
     options:Required<IsoBenchOptions>;
+    running = false;
     constructor(readonly name:string = "IsoBench", options?:IsoBenchOptions) {
         this.options = {...{ // Set defaults
             parallel: 1,
@@ -44,11 +45,17 @@ export class IsoBench {
     add(name:string, callback:()=>void):this;
     add<T>(name:string, callback:(setup:T)=>void, setup:()=>T):this;
     add(name:string, callback:(setup?:any)=>void, setup?:()=>any) {
+        if (this.running) {
+            throw new Error("Can't add tests to a running bench");
+        }
         name = getUniqueName(name, this.tests);
         this.tests.set(name, new Test(name, callback, setup));
         return this;
     }
     addProcessor(processor:Processor) {
+        if (this.running) {
+            throw new Error("Can't add processors to a running bench");
+        }
         this.processors.push(processor);
         return this;
     }
@@ -59,6 +66,10 @@ export class IsoBench {
         return this.addProcessor(new StreamLog(stream));
     }
     async run() {
+        if (this.running) {
+            throw new Error("Already running");
+        }
+        this.running = true;
         if (WorkerSetup) {
             // If is a fork, try to run the specific test
             this._start(WorkerSetup);
