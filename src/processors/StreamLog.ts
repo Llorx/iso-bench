@@ -17,18 +17,18 @@ const enum COLORS {
 function formatColor(str:string, color:COLORS, useColor:boolean) {
     return useColor ? `${color}${str}${COLORS.CLEAR}` : str;
 }
-function _getTestLog(padding:number, test:Test, minMax:{min:number, max:number}|null, useColor:boolean) {
+function _getTestLog(padding:number, test:Test, minMax:{min:number, max:number}|null, useColor:boolean, sample?:Sample) {
     const logArgs:unknown[] = [test.name.padEnd(padding, " "), "-"];
     if (test.error) {
         logArgs.push(formatColor(test.error, COLORS.RED, useColor));
     } else {
-        logArgs.push(formatColor(Math.round(test.opMs*1000).toLocaleString(), COLORS.BLUE, useColor));
-        if (test.samples.length > 1) {
+        logArgs.push(formatColor(Math.round((sample ? sample.ops : test.opMs) *1000).toLocaleString(), COLORS.BLUE, useColor));
+        if (!sample && test.samples.length > 1) {
             logArgs.push("op/s.", formatColor(String(test.samples.length), COLORS.BLUE, useColor), "samples in");
         } else {
             logArgs.push("op/s in");
         }
-        logArgs.push(formatColor(String(Math.round(test.totalTime)), COLORS.BLUE, useColor), "ms.");
+        logArgs.push(formatColor(String(Math.round(sample ? sample.time : test.totalTime)), COLORS.BLUE, useColor), "ms.");
         if (minMax) {
             logArgs.push(formatColor(`${(test.opMs / minMax.min).toFixed(3)}x`, COLORS.BLUE, useColor));
             if (test.opMs === minMax.min) {
@@ -180,7 +180,7 @@ class DynamicStream implements Processor {
     sample(test:Test, sample:Sample) {
         const output = this._outputs.get(test.index);
         if (output) {
-            const logArgs = _getTestLog(this._padding, test, null, true);
+            const logArgs = _getTestLog(this._padding, test, null, true, sample);
             logArgs.push(`${COLORS.YELLOW}Running...${COLORS.CLEAR}`);
             output.log(logArgs.join(" "));
         }
