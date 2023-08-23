@@ -1,5 +1,3 @@
-import { STRINGS } from "./STRINGS";
-
 export type SetupMessage = {
     testI:number;
     benchName:string;
@@ -10,9 +8,9 @@ export type SetupMessage = {
 };
 
 export let WorkerSetup:SetupMessage|null = null;
-if (process.env[STRINGS.ISO_BENCH_SETUP]) {
+if (process.env["ISO_BENCH_SETUP"]) {
     try {
-        WorkerSetup = JSON.parse(process.env[STRINGS.ISO_BENCH_SETUP]!);
+        WorkerSetup = JSON.parse(process.env["ISO_BENCH_SETUP"]!);
     } catch (e) {
         WorkerSetup = null;
     }

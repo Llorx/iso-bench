@@ -1,7 +1,0 @@
-export const enum STRINGS {
-    INITIALIZED = "[TESTS INITIALIZED]",
-    WORSE = "WORSE",
-    BEST = "BEST",
-    COMPLETED = "[TESTS COMPLETED]",
-    ISO_BENCH_SETUP = "ISO_BENCH_SETUP"
-}

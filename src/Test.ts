@@ -1,7 +1,6 @@
 import STREAM from "stream";
 import CHILD_PROCESS from "child_process";
 
-import { STRINGS } from "./STRINGS";
 import { Fork } from "./Fork";
 import { IsoBenchOptions, Processor } from ".";
 import { SetupMessage } from "./WorkerSetup";
@@ -33,7 +32,7 @@ class ForkContext<T> {
             warmUpTime: this._options.warmUpTime
         };
         const worker = Fork.fork({
-            [STRINGS.ISO_BENCH_SETUP]: JSON.stringify(setup)
+            ["ISO_BENCH_SETUP"]: JSON.stringify(setup)
         });
         this._listenForCompletionMessage(worker.stdio[3] as STREAM.Readable);
         this._listenForProcessExit(worker);
