@@ -1,18 +1,81 @@
+import FS from "fs";
+
 import { IsoBench } from "..";
 
-const dates = new Array(1000).fill(0).map(() => new Date(Math.floor(Date.now() - (Math.random() * 1000000000))));
+const buffers = new Array(1000).fill(0).map(() => Buffer.allocUnsafe(1));
+buffers.forEach(buffer => buffer[0] = Math.floor(Math.random() * 0xFF));
 
-const bench = new IsoBench("test");
-bench.add("iso", () => {
-  let res = 0;
-  for (const date of dates) {
-    res += Buffer.byteLength(date.toISOString());
+const bench = new IsoBench("MyBench");
+bench
+.add("readUint8", () =>{
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
   }
-});
-bench.add("calc", () => {
-  let res = 0;
-  for (const date of dates) {
-    res += Buffer.byteLength(`${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}T${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}:${String(date.getUTCSeconds()).padStart(2, "0")}.${String(date.getUTCMilliseconds()).padStart(3, "0")}`);
+})
+.add("direct", () =>{
+  for (const buffer of buffers) {
+    buffer[0];
   }
-});
-bench.consoleLog().run();
+})
+.endGroup("yay...")
+.add("direct", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+})
+.add("readUint8", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+}).endGroup("yay...2")
+.add("direct", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+})
+.add("readUint8", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+}).endGroup("yay...3")
+.add("direct", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+})
+.add("readUint8", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+}).endGroup("yay...4")
+.add("direct", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+})
+.add("readUint8", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+}).endGroup("yay...5")
+.add("direct", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+})
+.add("readUint8", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+}).endGroup("yay...6")
+.add("direct", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+})
+.add("readUint8", () => {
+  for (const buffer of buffers) {
+    buffer.readUint8(0);
+  }
+}).endGroup("yay...7")
+.streamLog(() => FS.createWriteStream("test.txt")).run();

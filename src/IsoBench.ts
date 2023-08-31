@@ -54,27 +54,27 @@ export class IsoBench {
         this.currentTests.push(test);
         return this;
     }
-    addProcessor(processor:Processor) {
+    addProcessor(processorCallback:() => Processor) {
         if (WorkerSetup) {
             return this;
         }
         if (this.running) {
             throw new Error("Can't add processors to a running bench");
         }
-        this.processors.push(processor);
+        this.processors.push(processorCallback());
         return this;
     }
     consoleLog() {
         if (WorkerSetup) {
             return this;
         }
-        return this.addProcessor(new ConsoleLog());
+        return this.addProcessor(() => new ConsoleLog());
     }
-    streamLog(stream:STREAM.Writable) {
+    streamLog(streamCallback:() => STREAM.Writable) {
         if (WorkerSetup) {
             return this;
         }
-        return this.addProcessor(new StreamLog(stream));
+        return this.addProcessor(() => new StreamLog(streamCallback()));
     }
     endGroup(name:string) {
         for (const test of this.currentTests.splice(0)) {
