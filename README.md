@@ -124,8 +124,8 @@ Creates a new `IsoBench` instance to benchmark your code.
 - `name`: The name of this IsoBench instance. Defaults to `IsoBench`.
 - `options`: Object:
     - `parallel`: The amount of parallel tests to run. Defaults to **1**.
-    - `time`: The minimum time (in milliseconds) to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `ms` between tests to take samples. Defaults to **3000**.
-    - `samples`: Amount of samples to get. Defaults to **1**.
+    - `time`: The minimum time (in milliseconds) to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `ms` between tests to take samples. Defaults to **50**.
+    - `samples`: Amount of samples to get. Defaults to **100**.
     - `warmUpTime`: The minimum time (in milliseconds) to pre-run the tests, so the [JavaScript engine optimizer kicks-in](https://doar-e.github.io/blog/2019/01/28/introduction-to-turbofan/#compilation-pipeline:~:text=If%20the%20function%20gets%20executed%20a%20lot%2C%20TurboFan%20will%20generate%20some%20optimized%20code) before initializing the timer. Defaults to **500**.
 
 ---
