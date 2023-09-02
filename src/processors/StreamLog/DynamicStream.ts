@@ -4,10 +4,10 @@ import { Processor } from "../../Processor";
 import { Test, Sample } from "../../Test";
 import { IsoBench } from "../../IsoBench";
 import { Group, getTestLog, COLORS } from "./Utils";
-import { StreamTTY } from "./StreamTTY";
+import { TTYOutput } from "./TTYOutput";
 
 export class TestOutput {
-    constructor(private _tty:StreamTTY, readonly line:number) {}
+    constructor(private _tty:TTYOutput, readonly line:number) {}
     log(data:string) {
         this._tty.log(data, this.line);
     }
@@ -20,7 +20,7 @@ export class DynamicStream implements Processor {
     private _benchName = "";
     private _groups = new Map<string, Group>();
     constructor(protected _stream:TTY.WriteStream) {
-        this._tty = new StreamTTY(this._stream);
+        this._tty = new TTYOutput(this._stream);
         this._header = new TestOutput(this._tty, 0);
     }
     initialize(bench:IsoBench, tests:Test[]) {
@@ -73,6 +73,7 @@ export class DynamicStream implements Processor {
         if (output) {
             const logArgs = getTestLog(this._padding, test, null, true, sample);
             logArgs.push(`${COLORS.YELLOW}Running...${COLORS.CLEAR}`);
+            //logArgs.push("Min:", test.samples.slice().sort((a,b) => a.ops - b.ops)[0].ops, "Max:", test.samples.slice().sort((a,b) => b.ops - a.ops)[0].ops);
             output.log(logArgs.join(" "));
         }
     }
@@ -80,6 +81,7 @@ export class DynamicStream implements Processor {
         const output = this._outputs.get(test.index);
         if (output) {
             const logArgs = getTestLog(this._padding, test, null, true);
+            //logArgs.push("Min:", test.samples.slice().sort((a,b) => a.ops - b.ops)[0].ops, "Max:", test.samples.slice().sort((a,b) => b.ops - a.ops)[0].ops);
             output.log(logArgs.join(" "));
         }
         const group = this._groups.get(test.group);
@@ -101,6 +103,7 @@ export class DynamicStream implements Processor {
             const output = this._outputs.get(test.index);
             if (output) {
                 const logArgs = getTestLog(this._padding, test, { min, max }, true);
+                //logArgs.push("Min:", test.samples.slice().sort((a,b) => a.ops - b.ops)[0].ops, "Max:", test.samples.slice().sort((a,b) => b.ops - a.ops)[0].ops);
                 output.log(logArgs.join(" "));
             }
         }

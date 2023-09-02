@@ -3,7 +3,6 @@ export type SetupMessage = {
     benchName:string;
     time:number;
     samples:number;
-    warmUpTime:number;
 };
 
 export let WorkerSetup:SetupMessage|null = null;

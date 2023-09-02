@@ -21,7 +21,6 @@ export type IsoBenchOptions = {
     parallel?:number;
     samples?:number;
     time?:number;
-    warmUpTime?:number;
 };
 export class IsoBench {
     processors:Processor[] = [];
@@ -32,9 +31,8 @@ export class IsoBench {
     constructor(readonly name:string = "IsoBench", options?:IsoBenchOptions) {
         this.options = {...{ // Set defaults
             parallel: 1,
-            samples: 100,
-            time: 50,
-            warmUpTime: 50
+            samples: 50,
+            time: 100
         }, ...options};
         this.name = getUniqueName(this.name, BENCHES);
         BENCHES.set(this.name, this);

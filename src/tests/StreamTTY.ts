@@ -1,6 +1,6 @@
-import { StreamTTY } from "../processors/StreamLog/StreamTTY";
+import { TTYOutput } from "../processors/StreamLog/TTYOutput";
 
-const tty = new StreamTTY(process.stdout);
+const tty = new TTYOutput(process.stdout);
 for (let i = 0; i < 10; i++) {
     setTimeout(() => {
         tty.log("test" + i, i);

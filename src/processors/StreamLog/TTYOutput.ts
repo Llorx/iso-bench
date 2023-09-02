@@ -1,6 +1,6 @@
 import TTY from "tty";
 
-export class StreamTTY {
+export class TTYOutput {
     logs:string[] = [];
     top = 0;
     drawheight = 0;
