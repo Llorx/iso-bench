@@ -1,7 +1,8 @@
 import FS from "fs";
 import STREAM from "stream";
 
-import { RunMessage, Test } from "./Test";
+import { Test } from "./Test";
+import { Messager, RunMessage } from "./Messager";
 import { WorkerSetup, SetupMessage } from "./WorkerSetup";
 import { Processor } from "./Processor";
 import { ConsoleLog, StreamLog } from "./processors";
@@ -31,9 +32,9 @@ export class IsoBench {
     constructor(readonly name:string = "IsoBench", options?:IsoBenchOptions) {
         this.options = {...{ // Set defaults
             parallel: 1,
-            samples: 1,
-            time: 3000,
-            warmUpTime: 500
+            samples: 100,
+            time: 50,
+            warmUpTime: 50
         }, ...options};
         this.name = getUniqueName(this.name, BENCHES);
         BENCHES.set(this.name, this);
@@ -119,24 +120,23 @@ export class IsoBench {
             }
         }
     }
-    private _start(setup:SetupMessage) {
+    private async _start(setup:SetupMessage) {
         if (this.name === setup.benchName) { // Wait for the specific test this fork should run
-            let sendData:RunMessage;
             try {
-                const test = this.tests[setup.testI];
+                const test = this.tests[setup.testIndex];
                 if (!test) {
-                    throw new Error("Test index " + setup.testI + " not found");
+                    throw new Error("Test index " + setup.testIndex + " not found");
                 }
-                sendData = test.run(setup);
+                await test.run(setup);
+                await Messager.send({
+                    done: true
+                });
             } catch (e) {
-                sendData = {
+                await Messager.send({
                     error: String(e)
-                };
+                });
             }
-            const bufferLength = Buffer.allocUnsafe(2);
-            const buffer = Buffer.from(JSON.stringify(sendData));
-            bufferLength.writeUint16LE(buffer.length);
-            FS.createWriteStream("", {fd: 3}).write(Buffer.concat([bufferLength, buffer]), () => process.exit());
+            setTimeout(() => process.exit(), 100);
         }
     }
 }

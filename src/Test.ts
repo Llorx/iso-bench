@@ -1,17 +1,12 @@
 import STREAM from "stream";
 import CHILD_PROCESS from "child_process";
+import { performance } from "perf_hooks";
 
 import { Fork } from "./Fork";
 import { IsoBenchOptions, Processor } from ".";
 import { SetupMessage } from "./WorkerSetup";
+import { Messager, RunMessage } from "./Messager";
 
-export type RunMessage = {
-    error:string;
-}|{
-    diff:number;
-    cycles:number;
-    warmUpCycles:number;
-};
 export type Sample = {
     cycles: number;
     time:number;
@@ -24,10 +19,9 @@ class ForkContext<T> {
     start() {
         // Start worker
         const setup:SetupMessage = {
-            testI: this._test.index,
+            testIndex: this._test.index,
             benchName: this._benchName,
-            cycles: this._test.cycles,
-            warmUpCycles: this._test.warmUpCycles,
+            samples: this._options.samples,
             time: this._options.time,
             warmUpTime: this._options.warmUpTime
         };
@@ -37,35 +31,27 @@ class ForkContext<T> {
         this._listenForCompletionMessage(worker.stdio[3] as STREAM.Readable);
         this._listenForProcessExit(worker);
     }
-    private _done(error?:string, diff?:number, cycles?:number, warmUpCycles?:number) {
+    private _processMessage(msg:RunMessage) {
         if (!this._ended) {
-            this._ended = true;
-            if (cycles) {
-                this._test.cycles = cycles;
-            }
-            if (warmUpCycles) {
-                this._test.warmUpCycles = warmUpCycles;
-            }
-            if (error) {
+            if (msg.error != null) {
                 this._test.opMs = 0;
-                this._test.error = error;
+                this._test.error = msg.error;
+                this._ended = true;
                 this._resolve();
-            } else if (diff) {
+            } else if (msg.done) {
+                this._ended = true;
+                this._resolve();
+            } else {
                 const sample:Sample = {
-                    cycles: this._test.cycles,
-                    time: diff,
-                    ops: this._test.cycles / diff
+                    cycles: msg.cycles,
+                    time: msg.diff,
+                    ops: msg.cycles / msg.diff
                 };
                 this._test.samples.push(sample);
-                this._test.totalTime += diff;
+                this._test.totalTime += msg.diff;
                 this._test.opMs = this._test.samples.reduce((total, sample) => total + sample.ops, 0) / this._test.samples.length;
                 for (const processor of this._processors) {
                     processor.sample && processor.sample(this._test, sample);
-                }
-                if (this._test.samples.length >= this._options.samples) {
-                    this._resolve();
-                } else {
-                    new ForkContext(this._test, this._processors, this._resolve, this._benchName, this._options).start();
                 }
             }
         }
@@ -75,7 +61,9 @@ class ForkContext<T> {
         stream.on("readable", () => {
             try {
                 while(stream.readable) {
-                    if (size == null) {
+                    if (this._ended) {
+                        break;
+                    } else if (size == null) {
                         const buffer = stream.read(2);
                         if (buffer && buffer.length === 2) {
                             size = buffer.readUint16LE();
@@ -85,18 +73,16 @@ class ForkContext<T> {
                     } else {
                         const buffer = stream.read(size);
                         if (buffer && buffer.length === size) {
+                            size = null;
                             const message = JSON.parse(String(buffer)) as RunMessage;
-                            if ("error" in message) {
-                                this._done(message.error);
-                            } else {
-                                this._done("", message.diff, message.cycles, message.warmUpCycles);
-                            }
+                            this._processMessage(message);
                         }
-                        break;
                     }
                 }
             } catch (e) {
-                this._done(String(e));
+                this._processMessage({
+                    error: String(e)
+                });
             }
         });
     }
@@ -109,14 +95,14 @@ class ForkContext<T> {
             if (errBuffer.length > 0) {
                 err = `${err}. Error: ${Buffer.concat(errBuffer).toString()}`;
             }
-            this._done(err);
+            this._processMessage({
+                error: err
+            });
         });
     }
 }
 export class Test {
     error:string|null = null;
-    cycles = 1;
-    warmUpCycles = 1;
     opMs = 0;
     totalTime = 0;
     samples:Sample[] = [];
@@ -129,20 +115,22 @@ export class Test {
             forkContext.start();
         }));
     }
-    run(setup:SetupMessage) {
-        const warmUpResult = setup.warmUpTime > 0 ? this._getResult(setup.warmUpTime, setup.warmUpCycles) : null;
-        if (warmUpResult && warmUpResult.cycles !== setup.warmUpCycles) {
-            // Use the warmup cycles to calculate the result cycles
+    async run(setup:SetupMessage) {
+        const warmUpResult = setup.warmUpTime > 0 ? this._getResult(setup.warmUpTime, 1) : null;
+        let cycles = 1;
+        if (warmUpResult) {
             const ratio = (setup.time / setup.warmUpTime) * 1.02;
-            setup.cycles = warmUpResult.cycles * ratio;
+            cycles = warmUpResult.cycles * ratio;
         }
-        const result = this._getResult(setup.time, setup.cycles);
-        const runResult:RunMessage = {
-            diff: result.diff,
-            cycles: result.cycles,
-            warmUpCycles: warmUpResult ? warmUpResult.cycles : 0
-        };
-        return runResult;
+        let samples = setup.samples;
+        while(samples-- > 0) {
+            const result = this._getResult(setup.time, cycles);
+            cycles = result.cycles;
+            await Messager.send({
+                diff: result.diff,
+                cycles: result.cycles
+            });
+        }
     }
     private _getResult(targetTime:number, cycles:number) {
         let diff:number;
@@ -161,17 +149,17 @@ export class Test {
         // Individual loops so the callback doesn't receive an argument if there's no setup
         if (this._setup) {
             const setup = this._setup();
-            const startTS = process.hrtime.bigint();
+            const startTS = performance.now();
             while(cycles-- > 0) {
                 this._callback(setup);
             }
-            return Number(process.hrtime.bigint() - startTS) / 1000000;
+            return performance.now() - startTS;
         } else {
-            const startTS = process.hrtime.bigint();
+            const startTS = performance.now();
             while(cycles-- > 0) {
                 this._callback();
             }
-            return Number(process.hrtime.bigint() - startTS) / 1000000;
+            return performance.now() - startTS;
         }
     }
 }

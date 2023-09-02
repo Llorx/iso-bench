@@ -1,5 +1,3 @@
-import FS from "fs";
-
 import { IsoBench } from "..";
 
 const buffers = new Array(1000).fill(0).map(() => Buffer.allocUnsafe(1));
@@ -78,4 +76,4 @@ bench
     buffer.readUint8(0);
   }
 }).endGroup("yay...7")
-.streamLog(() => FS.createWriteStream("test.txt")).run();
+.consoleLog().run();

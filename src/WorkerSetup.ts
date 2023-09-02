@@ -1,9 +1,8 @@
 export type SetupMessage = {
-    testI:number;
+    testIndex:number;
     benchName:string;
-    cycles:number;
-    warmUpCycles:number;
     time:number;
+    samples:number;
     warmUpTime:number;
 };
 

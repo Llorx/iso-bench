@@ -200,13 +200,13 @@ Adds a built-in [Processor](#i-processor) that outputs the result in the console
 ```typescript
 bench.streamLog(streamCallback:() => Stream.Writable):this;
 ```
-Adds a built-in [Processor](#i-processor) that outputs the result in a writable stream, like a file or a socket. The writable stream should be returned inside the callback function and will be only called in the main process. Returns the IsoBench instance.
+Adds a built-in [Processor](#i-processor) that outputs the result in a writable stream, like a file or a socket. The writable stream should be returned inside the callback function so it will be only called in the main process. Returns the IsoBench instance.
 
 ---
 ```typescript
 bench.addProcessor(processorCallback:() => Processor):this;
 ```
-Adds a custom [Processor](#i-processor) that must implement the [Processor](#i-processor) interface. The callback should return a [Processor](#i-processor) instance and will be only called in the main process. Returns the IsoBench instance.
+Adds a custom [Processor](#i-processor) that must implement the [Processor](#i-processor) interface. The callback should return a [Processor](#i-processor) instance so it will be only called in the main process. Returns the IsoBench instance.
 
 ---
 ```typescript
