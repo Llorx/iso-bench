@@ -88,7 +88,7 @@ export class ForkContext {
         // Save stderr information just in case it exits prematurely
         const errBuffer:Buffer[] = [];
         worker.stderr!.on("data", data => errBuffer.push(data));
-        worker.on("exit", (code) => {
+        worker.on("close", (code) => {
             let err = `Process ended prematurely. Exit code: ${code}`;
             if (errBuffer.length > 0) {
                 err = `${err}. Error: ${Buffer.concat(errBuffer).toString()}`;

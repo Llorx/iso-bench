@@ -134,7 +134,7 @@ export class IsoBench {
                     error: String(e)
                 });
             }
-            setTimeout(() => process.exit(), 100);
+            process.exit();
         }
     }
 }
