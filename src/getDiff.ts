@@ -1,6 +1,6 @@
 import { performance } from "perf_hooks";
 
-export function getDiff(cycles:number, callback:(setupData?:unknown)=>void, setup?:()=>unknown) {
+export function getDiff(cycles:number, callback:(setupData?:unknown)=>void, setup?:(()=>unknown)|null) {
     const setupData = setup && setup();
     const startTS = performance.now();
     while(cycles-- > 0) {

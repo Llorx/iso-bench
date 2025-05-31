@@ -124,26 +124,21 @@ Creates a new `IsoBench` instance to benchmark your code.
 - `name`: The name of this IsoBench instance. Defaults to `IsoBench`.
 - `options`: Object:
     - `parallel`: The amount of parallel tests to run. Defaults to **1**.
-    - `time`: The minimum time (in milliseconds) to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `ms` between tests to take samples. Defaults to **100**.
-    - `samples`: Amount of samples to get. Will launch a new process each 10% samples. Defaults to **50** so will launch a new process each **5** samples.
+    - `time`: The minimum time (in milliseconds) to invest on each test. The library will automatically increase the amount of cycles to reach a minimum of `ms` between tests to take samples. Note that the setup callback is called one time per *cycle set*, so it will be reused on each cycle, so if the setup is consumable you must use `customCycles` instead. Defaults to **100**.
+    - `customCycles`: If you have your own amount of cycles (for, while, iterator, anything), you can input the amount of cycles that you are running. The library will divide the resuting time with this `customCycles` to calculate the amount of operations per second for this sample. Make sure that a proper amount of time is spent on each iteration (50-100ms recommended). This allows to use consumable setups, so the library doesn't run multiple cycles over them (read `time` help). Defaults to **null**.
+    - `spawns`: Amount of processes to spawn per test. They will be spawned linearly for the same test, never in parallel. Defaults to **10**.
+    - `samplesPerSpawn`: Amount of samples to run on each spawned process. Defaults to **5**.
 
 ---
 ```typescript
-bench.add(name:string, test:()=>void):this;
+bench.add<T>(name:string, test:(setupReturn:T)=>void, setup?:()=>T, testOptions?:TestOptions):this;
 ```
 Adds new test.
 - `name`: The name of this test.
 - `test`: The test function to run.
 Returns the IsoBench instance, to concatenate new tests easily.
-
----
-```typescript
-bench.add<T>(name:string, test:(setupReturn:T)=>void, setup:()=>T):this;
-```
-Adds new test with an isolated setup callback.
-- `name`: The name of this test.
-- `test`: The test function to run.
-- `setup`: The setup function to run before the test. If you are very concerned about the pollution between tests when preparing data that only one test needs, you can use the `setup` callback to return the data that will be provided to the `test` callback as the first argument. The other tests will not run this `setup` callback in their isolated processes.
+- `setup`: Optional. The setup function to run before the test. If you are very concerned about the pollution between tests when preparing data that only one test needs, you can use the `setup` callback to return the data that will be provided to the `test` callback as the first argument. The other tests will not run this `setup` callback in their isolated processes.
+- `testOptions`: Same options as `IsoBenchOptions` but `parallel`. These will apply to this specific test, merging with the general `IsoBenchOptions` that you've passed.
 
 Example:
 ```typescript
@@ -159,7 +154,26 @@ bench.add("object.result", (obj) => {
         set: (res) => objResult = res
       }
   });
-})
+});
+bench.add("for of generator", (obj) => {
+  let res = 0;
+  for(const value of iterable) {
+    res = res ^ value;
+  }
+}, () => {
+  // Create a consumable setup element
+  let count = 1000000;
+  function* createIterable() {
+    for (let i = 0; i < count; i++) {
+      yield i;
+    }
+  }
+  return createIterable();
+}, {
+  // The library first cycle will consume it so next cycles will return invalid results,
+  // so we tell the library that we have a custom cycle system with the amount of cycles
+  customCycles: 1000000
+});
 ```
 
 ---

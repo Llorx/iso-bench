@@ -1,8 +1,6 @@
 export type SetupMessage = {
     testIndex:number;
     benchName:string;
-    time:number;
-    samples:number;
 };
 
 let WorkerSetup:SetupMessage|null = null;

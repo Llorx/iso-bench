@@ -1,9 +1,9 @@
 {
   "name": "iso-bench",
-  "version": "2.4.7",
+  "version": "3.0.0",
   "description": "Small benchmark library focused in avoiding optimization/deoptimization pollution between tests by isolating them.",
-  "types": "./lib/_types/index.d.ts",
-  "main": "./lib/",
+  "types": "lib/types",
+  "main": "lib/",
   "files": [
     "lib/"
   ],
@@ -20,7 +20,7 @@
     "benny"
   ],
   "scripts": {
-    "clean": "node -e \"(require('fs').rm||require('fs').rmdir)('lib', { recursive: true }, ()=>{});\"",
+    "clean": "node -e \"(require('fs').rm||require('fs').rmdir)('lib', { recursive: true, force: true }, ()=>{});\"",
     "watch": "npm run clean && npx tsc --watch --inlineSourcemap",
     "build": "npm run clean && npx tsc --project tsconfig.build.json"
   },
@@ -31,7 +31,8 @@
     "url": "https://github.com/llorx/iso-bench"
   },
   "devDependencies": {
-    "@types/node": "^18.6.3",
-    "typescript": "^4.4.4"
+    "@types/node": "^22.15.29",
+    "arrange-act-assert": "^0.0.5",
+    "typescript": "^5.8.3"
   }
 }

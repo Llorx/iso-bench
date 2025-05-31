@@ -1,7 +1,6 @@
-import FS from "fs";
 import STREAM from "stream";
 
-import { Test } from "./Test";
+import { Test, TestOptions } from "./Test";
 import { Messager, RunMessage } from "./Messager";
 import { WorkerSetup, SetupMessage } from "./WorkerSetup";
 import { Processor } from "./Processor";
@@ -19,9 +18,7 @@ function getUniqueName(name:string, map:Map<string, unknown>) {
 const BENCHES = new Map<string, IsoBench>();
 export type IsoBenchOptions = {
     parallel?:number;
-    samples?:number;
-    time?:number;
-};
+} & TestOptions;
 export class IsoBench {
     processors:Processor[] = [];
     tests:Test[] = [];
@@ -31,7 +28,9 @@ export class IsoBench {
     constructor(readonly name:string = "IsoBench", options?:IsoBenchOptions) {
         this.options = {...{ // Set defaults
             parallel: 1,
-            samples: 50,
+            samplesPerSpawn: 5,
+            spawns: 10,
+            customCycles: null,
             time: 100
         }, ...options};
         this.name = getUniqueName(this.name, BENCHES);
@@ -42,13 +41,24 @@ export class IsoBench {
             cb();
         }
     }
-    add(name:string, callback:()=>void):this;
-    add<T>(name:string, callback:(setup:T)=>void, setup:()=>T):this;
-    add(name:string, callback:(setup?:any)=>void, setup?:()=>any) {
+    add(name:string, callback:()=>void, options?:TestOptions):this;
+    add<T>(name:string, callback:(setup:T)=>void, setup:()=>T, options?:TestOptions):this;
+    add(name:string, callback:(setup?:any)=>void, setup?:(()=>any)|null|TestOptions, options?:TestOptions) {
         if (this.running) {
             throw new Error("Can't add tests to a running bench");
         }
-        const test = new Test(name, this.tests.length, callback, setup);
+        if (setup && typeof setup === "object") {
+            options = setup;
+            setup = null;
+        }
+        const filteredTestOptions = options && Object.fromEntries(Object.entries(options).filter(([_, v]) => v !== undefined));
+        const test = new Test(name, this.tests.length, {
+            ...this.options,
+            ...filteredTestOptions
+        }, {
+            callback: callback,
+            setup: typeof setup === "function" ? setup : null
+        });
         this.tests.push(test);
         this.currentTests.push(test);
         return this;
@@ -77,7 +87,7 @@ export class IsoBench {
     }
     endGroup(name:string) {
         for (const test of this.currentTests.splice(0)) {
-            test.group = name;
+            test.setGroup(name);
         }
         return this;
     }
@@ -125,7 +135,7 @@ export class IsoBench {
                 if (!test) {
                     throw new Error("Test index " + setup.testIndex + " not found");
                 }
-                await test.run(setup);
+                await test.run();
                 await Messager.send({
                     done: true
                 });

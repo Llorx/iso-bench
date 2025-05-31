@@ -1,5 +1,4 @@
 import { spawn } from "child_process";
-import cluster from "cluster";
 
 export namespace Fork {
     export function fork(env:Record<string, string>) {

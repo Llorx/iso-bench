@@ -6,18 +6,15 @@ import { RunMessage } from "./Messager";
 import { Processor } from "./Processor";
 import { SetupMessage } from "./WorkerSetup";
 import { Sample, Test } from "./Test";
-import { IsoBenchOptions } from "./IsoBench";
 
 export class ForkContext {
     private _ended = false;
-    constructor(private _test:Test, private _processors:Processor[], private _resolve:()=>void, private _benchName:string, private _options:Required<IsoBenchOptions>) {}
+    constructor(private _test:Test, private _processors:Processor[], private _resolve:()=>void, private _benchName:string) {}
     start() {
         // Start worker
         const setup:SetupMessage = {
             testIndex: this._test.index,
-            benchName: this._benchName,
-            samples: Math.min(Math.ceil(this._options.samples * 0.1), this._options.samples - this._test.samples.length),
-            time: this._options.time
+            benchName: this._benchName
         };
         const worker = Fork.fork({
             ["ISO_BENCH_SETUP"]: JSON.stringify(setup)
@@ -34,10 +31,12 @@ export class ForkContext {
                 this._resolve();
             } else if (msg.done) {
                 this._ended = true;
-                if (this._test.samples.length >= this._options.samples) {
+                const totalSamples = this._test.options.samplesPerSpawn * this._test.options.spawns;
+                if (this._test.samples.length >= totalSamples) {
                     this._resolve();
                 } else {
-                    new ForkContext(this._test, this._processors, this._resolve, this._benchName, this._options).start();
+                    const forkContext = new ForkContext(this._test, this._processors, this._resolve, this._benchName);
+                    forkContext.start();
                 }
             } else {
                 const sample:Sample = {
