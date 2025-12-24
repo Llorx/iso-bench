@@ -180,7 +180,7 @@ bench.add("for of generator", (obj) => {
 ```typescript
 bench.endGroup(name:string):this;
 ```
-Groups the tests added up to this point. The result comparator will be done only between tests in the same group. Example:
+Group the tests added up to this point. The result comparator will be done only between tests in the same group. Example:
 ```typescript
 import { IsoBench } from "iso-bench";
 

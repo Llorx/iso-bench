@@ -1,5 +1,5 @@
-import STREAM from "stream";
-import TTY from "tty";
+import * as Stream from "stream";
+import * as TTY from "tty";
 
 import { Processor } from "../../Processor";
 import { Test, Sample } from "../../Test";
@@ -9,7 +9,7 @@ import { StaticStream } from "./StaticStream";
 
 export class StreamLog implements Processor {
     private _log:Processor;
-    constructor(stream:STREAM.Writable|TTY.WriteStream) {
+    constructor(stream:Stream.Writable|TTY.WriteStream) {
         this._log = ("isTTY" in stream && stream.isTTY) ? new DynamicStream(stream as TTY.WriteStream) : new StaticStream(stream);
     }
     initialize(bench:IsoBench, tests:Test[]) {

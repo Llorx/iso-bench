@@ -1,4 +1,4 @@
-import TTY from "tty";
+import * as TTY from "tty";
 
 export class TTYOutput {
     logs:string[] = [];

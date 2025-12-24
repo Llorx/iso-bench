@@ -1,5 +1,4 @@
 import { IsoBenchOptions, Processor } from ".";
-import { SetupMessage } from "./WorkerSetup";
 import { Messager } from "./Messager";
 import { getDiff } from "./getDiff";
 import { ForkContext } from "./ForkContext";

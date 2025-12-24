@@ -1,4 +1,4 @@
-import TTY from "tty";
+import * as TTY from "tty";
 
 import { Processor } from "../../Processor";
 import { Test, Sample } from "../../Test";

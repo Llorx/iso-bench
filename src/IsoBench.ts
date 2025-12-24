@@ -1,4 +1,4 @@
-import STREAM from "stream";
+import * as Stream from "stream";
 
 import { Test, TestOptions } from "./Test";
 import { Messager, RunMessage } from "./Messager";
@@ -79,7 +79,7 @@ export class IsoBench {
         }
         return this.addProcessor(() => new ConsoleLog());
     }
-    streamLog(streamCallback:() => STREAM.Writable) {
+    streamLog(streamCallback:() => Stream.Writable) {
         if (WorkerSetup) {
             return this;
         }

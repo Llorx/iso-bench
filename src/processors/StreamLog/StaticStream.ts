@@ -1,4 +1,4 @@
-import STREAM from "stream";
+import * as Stream from "stream";
 
 import { Processor } from "../../Processor";
 import { Test } from "../../Test";
@@ -8,7 +8,7 @@ import { Group, getTestLog } from "./Utils";
 export class StaticStream implements Processor {
     private _padding = 0;
     private _groups = new Map<string, Group>();
-    constructor(protected _stream:STREAM.Writable) {}
+    constructor(protected _stream:Stream.Writable) {}
     initialize(bench:IsoBench, tests:Test[]) {
         for (const test of tests) {
             const group = this._groups.get(test.group);

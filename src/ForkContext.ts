@@ -1,5 +1,5 @@
-import STREAM from "stream";
-import CHILD_PROCESS from "child_process";
+import * as Stream from "stream";
+import * as ChildProcess from "child_process";
 
 import { Fork } from "./Fork";
 import { RunMessage } from "./Messager";
@@ -19,7 +19,7 @@ export class ForkContext {
         const worker = Fork.fork({
             ["ISO_BENCH_SETUP"]: JSON.stringify(setup)
         });
-        this._listenForCompletionMessage(worker.stdio[3] as STREAM.Readable);
+        this._listenForCompletionMessage(worker.stdio[3] as Stream.Readable);
         this._listenForProcessExit(worker);
     }
     private _processMessage(msg:RunMessage) {
@@ -53,7 +53,7 @@ export class ForkContext {
             }
         }
     }
-    private _listenForCompletionMessage(stream:STREAM.Readable) {
+    private _listenForCompletionMessage(stream:Stream.Readable) {
         let size:number|null = null;
         stream.on("readable", () => {
             try {
@@ -83,7 +83,7 @@ export class ForkContext {
             }
         });
     }
-    private _listenForProcessExit(worker:CHILD_PROCESS.ChildProcess) {
+    private _listenForProcessExit(worker:ChildProcess.ChildProcess) {
         // Save stderr information just in case it exits prematurely
         const errBuffer:Buffer[] = [];
         worker.stderr!.on("data", data => errBuffer.push(data));

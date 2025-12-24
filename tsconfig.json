@@ -8,7 +8,6 @@
         "declaration": true,
         "declarationDir": "./lib/types",
         "outDir": "./lib",
-        "esModuleInterop": true,
         "lib": ["DOM", "ESNext"]
     },
     "include": [

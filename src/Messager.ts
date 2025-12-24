@@ -1,4 +1,4 @@
-import FS from "fs";
+import * as FS from "fs";
 
 import { WorkerSetup } from "./WorkerSetup";
 
