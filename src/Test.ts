@@ -1,6 +1,6 @@
-import { IsoBenchOptions, Processor } from ".";
+import { AsyncCallback, AsyncSetupCallback, IsoBenchOptions, Processor } from ".";
 import { Messager } from "./Messager";
-import { getDiff } from "./getDiff";
+import { getAsyncDiff, getDiff } from "./getDiff";
 import { ForkContext } from "./ForkContext";
 
 export type Sample = {
@@ -18,8 +18,13 @@ export type TestOptions = {
     customCycles?:null;
     time?:number;
 });
-type TestCallbackSetup<T> = {
+export type TestCallbackSetup<T> = {
+    async:false;
     callback:(setupData:T)=>void;
+    setup?:(()=>T)|null;
+} | {
+    async:true;
+    callback:AsyncCallback|AsyncSetupCallback<T>;
     setup?:(()=>T)|null;
 };
 export class Test {
@@ -39,11 +44,21 @@ export class Test {
         this.group = name;
     }
     async run() {
-        getDiff(1, this._cb.callback, this._cb.setup); // warmup
+        // warmup
+        if (this._cb.async) {
+            await getAsyncDiff(1, this._cb.callback, this._cb.setup);
+        } else {
+            getDiff(1, this._cb.callback, this._cb.setup);
+        }
         let cycles = 1;
         let samples = this.options.samplesPerSpawn;
         do {
-            const diff = getDiff(cycles, this._cb.callback, this._cb.setup);
+            let diff;
+            if (this._cb.async) {
+                diff = await getAsyncDiff(cycles, this._cb.callback, this._cb.setup);
+            } else {
+                diff = getDiff(cycles, this._cb.callback, this._cb.setup);
+            }
             if (this.options.customCycles != null || diff >= this.options.time) {
                 samples--;
                 await Messager.send({

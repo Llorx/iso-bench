@@ -1,6 +1,6 @@
 import * as Stream from "stream";
 
-import { Test, TestOptions } from "./Test";
+import { Test, TestCallbackSetup, TestOptions } from "./Test";
 import { Messager, RunMessage } from "./Messager";
 import { WorkerSetup, SetupMessage } from "./WorkerSetup";
 import { Processor } from "./Processor";
@@ -14,6 +14,9 @@ function getUniqueName(name:string, map:Map<string, unknown>) {
     }
     return newName;
 }
+
+export type AsyncCallback = (resolve:()=>void, reject:(error:unknown)=>void)=>void;
+export type AsyncSetupCallback<T> = (resolve:()=>void, reject:(error:unknown)=>void, setup:T)=>void;
 
 const BENCHES = new Map<string, IsoBench>();
 export type IsoBenchOptions = {
@@ -41,24 +44,43 @@ export class IsoBench {
             cb();
         }
     }
-    add(name:string, callback:()=>void, options?:TestOptions):this;
-    add<T>(name:string, callback:(setup:T)=>void, setup:()=>T, options?:TestOptions):this;
-    add(name:string, callback:(setup?:any)=>void, setup?:(()=>any)|null|TestOptions, options?:TestOptions) {
-        if (this.running) {
-            throw new Error("Can't add tests to a running bench");
-        }
+    addAsync(name:string, callback:AsyncCallback, options?:TestOptions):this;
+    addAsync<T>(name:string, callback:AsyncSetupCallback<T>, setup:()=>T, options?:TestOptions):this;
+    addAsync(name:string, callback:AsyncCallback|AsyncSetupCallback<any>, setup?:(()=>any)|null|TestOptions, options?:TestOptions) {
         if (setup && typeof setup === "object") {
             options = setup;
             setup = null;
+        }
+        this.#add(name, {
+            async: true,
+            callback: callback,
+            setup: typeof setup === "function" ? setup : null
+        }, options);
+        return this;
+    }
+    add(name:string, callback:()=>void, options?:TestOptions):this;
+    add<T>(name:string, callback:(setup:T)=>void, setup:()=>T, options?:TestOptions):this;
+    add(name:string, callback:(setup?:any)=>void, setup?:(()=>any)|null|TestOptions, options?:TestOptions) {
+        if (setup && typeof setup === "object") {
+            options = setup;
+            setup = null;
+        }
+        this.#add(name, {
+            async: false,
+            callback: callback,
+            setup: typeof setup === "function" ? setup : null
+        }, options);
+        return this;
+    }
+    #add(name:string, testData:TestCallbackSetup<unknown>, options?:TestOptions) {
+        if (this.running) {
+            throw new Error("Can't add tests to a running bench");
         }
         const filteredTestOptions = options && Object.fromEntries(Object.entries(options).filter(([_, v]) => v !== undefined));
         const test = new Test(name, this.tests.length, {
             ...this.options,
             ...filteredTestOptions
-        }, {
-            callback: callback,
-            setup: typeof setup === "function" ? setup : null
-        });
+        }, testData);
         this.tests.push(test);
         this.currentTests.push(test);
         return this;

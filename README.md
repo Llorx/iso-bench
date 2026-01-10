@@ -138,7 +138,7 @@ Adds new test.
 - `test`: The test function to run.
 Returns the IsoBench instance, to concatenate new tests easily.
 - `setup`: Optional. The setup function to run before the test. If you are very concerned about the pollution between tests when preparing data that only one test needs, you can use the `setup` callback to return the data that will be provided to the `test` callback as the first argument. The other tests will not run this `setup` callback in their isolated processes.
-- `testOptions`: Same options as `IsoBenchOptions` but `parallel`. These will apply to this specific test, merging with the general `IsoBenchOptions` that you've passed.
+- `testOptions`: Same options as `IsoBenchOptions` but omitting `parallel`. These will apply to this specific test, merging with the general `IsoBenchOptions` that you've passed.
 
 Example:
 ```typescript
@@ -155,6 +155,7 @@ bench.add("object.result", (obj) => {
       }
   });
 });
+
 bench.add("for of generator", (obj) => {
   let res = 0;
   for(const value of iterable) {
@@ -173,6 +174,43 @@ bench.add("for of generator", (obj) => {
   // The library first cycle will consume it so next cycles will return invalid results,
   // so we tell the library that we have a custom cycle system with the amount of cycles
   customCycles: 1000000
+});
+```
+
+---
+```typescript
+bench.addAsync<T>(name:string, test:(resolve:()=>void, reject:()=>void, setupReturn:T)=>void, setup:()=>T, testOptions?:TestOptions):this;
+```
+Adds a new async test. `resolve` or `reject` should be called when the test finishes, like a `Promise` callback. It uses callbacks instead of actual promises to reduce amount of internal overhead and keep timings as close to the original.
+ - Same options as `bench.add`.
+
+Example:
+```typescript
+bench.addAsync("get async data", async (resolve, reject) => {
+  try {
+    await loadData();
+  } catch (e) {
+    reject(e);
+  }
+  resolve();
+});
+
+bench.addAsync("process async data", async (resolve, reject, data) => {
+  try {
+    await processData(data);
+  } catch (e) {
+    reject(e);
+  }
+  resolve();
+}, () => {
+  // Setup callback
+  let objResult = 0;
+  return Object.defineProperties({}, {
+      result: {
+        get: () => objResult,
+        set: (res) => objResult = res
+      }
+  });
 });
 ```
 
