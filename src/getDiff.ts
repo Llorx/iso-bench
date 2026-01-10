@@ -11,8 +11,8 @@ export function getDiff(cycles:number, callback:(setupData?:unknown)=>void, setu
 }
 function runAsync(cycles:number, callback:AsyncSetupCallback<unknown>, setup:unknown, resolve:()=>void, reject:(error:unknown)=>void) {
     // Duplicated to reduce branching. Important to reduce false timing.
-    let sync = true;
-    while (cycles-- > 0) {
+    let sync = true; // detect sync callbacks to avoid max call stacks
+    while (cycles-- > 0 && sync) {
         sync = false;
         callback(() => {
             if (sync) {
