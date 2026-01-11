@@ -1,15 +1,15 @@
 import * as Stream from "stream";
 
 import { Test, TestCallbackSetup, TestOptions } from "./Test";
-import { Messager, RunMessage } from "./Messager";
+import { Messager } from "./Messager";
 import { WorkerSetup, SetupMessage } from "./WorkerSetup";
 import { Processor } from "./Processor";
 import { ConsoleLog, StreamLog } from "./processors";
 
 let IDs = 0;
-function getUniqueName(name:string, map:Map<string, unknown>) {
+function getUniqueName(name:string, set:Set<string>) {
     let newName = name;
-    while (map.has(newName)) {
+    while (set.has(newName)) {
         newName = `${name}_${IDs++}`;
     }
     return newName;
@@ -18,7 +18,8 @@ function getUniqueName(name:string, map:Map<string, unknown>) {
 export type AsyncCallback = (resolve:()=>void, reject:(error:unknown)=>void)=>void;
 export type AsyncSetupCallback<T> = (resolve:()=>void, reject:(error:unknown)=>void, setup:T)=>void;
 
-const BENCHES = new Map<string, IsoBench>();
+const BENCH_NAMES = new Set<string>();
+let lastBench:IsoBench|null = null;
 export type IsoBenchOptions = {
     parallel?:number;
 } & TestOptions;
@@ -28,6 +29,8 @@ export class IsoBench {
     currentTests:Test[] = [];
     options:Required<IsoBenchOptions>;
     running = false;
+    done = false;
+    private _waiting:(() => void)[] = [];
     constructor(readonly name:string = "IsoBench", options?:IsoBenchOptions) {
         this.options = {...{ // Set defaults
             parallel: 1,
@@ -36,8 +39,8 @@ export class IsoBench {
             customCycles: null,
             time: 100
         }, ...options};
-        this.name = getUniqueName(this.name, BENCHES);
-        BENCHES.set(this.name, this);
+        this.name = getUniqueName(this.name, BENCH_NAMES);
+        BENCH_NAMES.add(this.name);
     }
     static IfMaster(cb:()=>void) {
         if (!WorkerSetup) {
@@ -119,9 +122,14 @@ export class IsoBench {
         }
         this.running = true;
         this.endGroup("");
+        const lastB = lastBench;
+        lastBench = this;
+        if (lastB != null) {
+            await lastB.wait();
+        }
         if (WorkerSetup) {
             // If is a fork, try to run the specific test
-            this._start(WorkerSetup);
+            await this._start(WorkerSetup);
         } else {
             // If is the master, run all test forks
             if (this.processors.length === 0) {
@@ -149,6 +157,22 @@ export class IsoBench {
                 processor.completed && processor.completed(tests);
             }
         }
+        this.done = true;
+        if (lastBench === this) {
+            lastBench = null;
+        }
+        for (const waiting of this._waiting) {
+            waiting();
+        }
+    }
+    protected wait() {
+        return new Promise<void>((resolve) => {
+            if (this.done) {
+                resolve();
+            } else {
+                this._waiting.push(resolve);
+            }
+        });
     }
     private async _start(setup:SetupMessage) {
         if (this.name === setup.benchName) { // Wait for the specific test this fork should run

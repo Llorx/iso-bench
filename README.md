@@ -269,7 +269,7 @@ Adds a custom [Processor](#i-processor) that must implement the [Processor](#i-p
 ```typescript
 bench.run():Promise<void>;
 ```
-Start running the tests. Returns a `Promise` that will resolve when all the tests are completed.
+Start running the tests. Returns a `Promise` that will resolve when all the tests are completed. If there are multiple `IsoBench` instances, they will chain together, waiting for the previous one to finish. It is impossible to run multiple instances at the same time.
 
 ### i. Processor
 Processors will receive the benchmark events to process them. They must implement the Processor interface:
