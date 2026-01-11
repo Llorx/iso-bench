@@ -118,6 +118,12 @@ bench.add("indexOf", () => {
 
 ## 5. Documentation
 ```typescript
+IsoBench.IfMaster(callback:() => {});
+```
+Static method. Run this `callback` only in the master process to avoid unneeded allocations in the child processes, for example to assert benchmarks, work with the filesystem or anything that should not run on each benchmark subprocess.
+
+---
+```typescript
 new IsoBench(name?:string, options?:IsoBenchOptions);
 ```
 Creates a new `IsoBench` instance to benchmark your code.
