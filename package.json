@@ -1,6 +1,6 @@
 {
   "name": "iso-bench",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Small benchmark library focused in avoiding optimization/deoptimization pollution between tests by isolating them.",
   "types": "lib/types",
   "main": "lib/",

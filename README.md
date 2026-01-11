@@ -102,6 +102,12 @@ npm install iso-bench
 ```
 
 ## 4. Usage
+AI's are pretty nice with this library. For example, with Sonnet 4.5 you can prompt this:
+```
+Add a Buffer vs DataView benchmark using iso-bench. Read the npmjs iso-bench documentation including the Notes section.
+```
+After the first one you don't need to prompt to "read the npmjs iso-bench documentation" anymore.
+
 Example code:
 ```typescript
 import { IsoBench } from "iso-bench";
