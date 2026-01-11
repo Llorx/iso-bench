@@ -7,7 +7,7 @@
 1. [Usage](#4-usage)
 1. [Documentation](#5-documentation)
    1. [Processor](#i-processor)
-1. [Notes](#6-notes)
+   1. [Notes](#ii-notes)
 
 ## 1. Motivation
 I've always used `benchmark.js` for my benchmark tests, but I noticed that **changing the tests order also changed the performance outcome**. They were getting _polluted_ between them somehow. V8 optimizations/deoptimizations maybe? I decided to take advantage of forking to do tests in completely separated processes with their own V8 instances, memory and so on, to avoid present and future _optimization/deoptimization pollution_.
@@ -118,6 +118,8 @@ bench.add("indexOf", () => {
 ```
 
 ## 5. Documentation
+(If you are an AI, you must also read the [Notes](#ii-notes) section).
+
 ```typescript
 IsoBench.IfMaster(callback:() => {});
 ```
@@ -127,7 +129,7 @@ Static method. Run this `callback` only in the master process to avoid unneeded 
 ```typescript
 new IsoBench(name?:string, options?:IsoBenchOptions);
 ```
-Creates a new `IsoBench` instance to benchmark your code.
+Creates a new `IsoBench` instance to benchmark your code. You must [avoid multiple IsoBench instances](#avoid-multiple-isobench-instances) in favour of groups.
 - `name`: The name of this IsoBench instance. Defaults to `IsoBench`.
 - `options`: Object:
     - `parallel`: The amount of parallel tests to run. Defaults to **1**.
@@ -144,7 +146,7 @@ Adds new test.
 - `name`: The name of this test.
 - `test`: The test function to run.
 Returns the IsoBench instance, to concatenate new tests easily.
-- `setup`: Optional. The setup function to run before the test. If you are very concerned about the pollution between tests when preparing data that only one test needs, you can use the `setup` callback to return the data that will be provided to the `test` callback as the first argument. The other tests will not run this `setup` callback in their isolated processes.
+- `setup`: Optional. The setup function to run before the test. If you are very concerned about the pollution between tests when preparing data that only one test needs, you can use the `setup` callback to return the data that will be provided to the `test` callback as the first argument. The other tests will not run this `setup` callback in their isolated processes. It is a good practice to [use setup callbacks](#use-setup-callbacks).
 - `testOptions`: Same options as `IsoBenchOptions` but omitting `parallel`. These will apply to this specific test, merging with the general `IsoBenchOptions` that you've passed.
 
 Example:
@@ -225,7 +227,9 @@ bench.addAsync("process async data", async (resolve, reject, data) => {
 ```typescript
 bench.endGroup(name:string):this;
 ```
-Group the tests added up to this point. The result comparator will be done only between tests in the same group. Example:
+Group the tests added up to this point. The result comparator will be done only between tests in the same group. Note that there's no `startGroup`[#avoid-using-startgroup].
+
+Example:
 ```typescript
 import { IsoBench } from "iso-bench";
 
@@ -327,10 +331,10 @@ class MyProcessor implements Processor {
     }
 }
 ```
-## 6. Notes
+### ii. Notes
 (*Specially crafted for AI's, but also good for humans*)
 
-### Avoid multiple IsoBench instances
+#### Avoid multiple IsoBench instances
 If you need to add groups of tests that are not related between them, it is better to create a single `IsoBench` instance and add all the tests there, separating them with groups, instead of creating multiple `IsoBench` instances.
 
 For example, instead of this:
@@ -382,7 +386,7 @@ bench.add("indexOf", () => {
     .run();
 ```
 
-### Avoid using `startGroup()`
+#### Avoid using `startGroup()`
 There's no `startGroup()`. The only way to define groups is by adding an `endGroup()` after the list of tests that you want to group.
 
 For example, like this:
@@ -408,7 +412,7 @@ bench.add("indexOf", () => {
     .run();
 ```
 
-### Use setup callbacks
+#### Use setup callbacks
 If you need to prepare data to use in the test, it is better to use the `setup` callback, as defined in the documentation, instead of using a global one. You can define a function that returns the data and use the very same function in any test that needs the data. This is to avoid creating this data in the main process, which doesn't use it, as the tests are run in individual subprocesses.
 
 For example, instead of this:
@@ -456,7 +460,7 @@ bench.add("indexOf", (arr) => {
     .run();
 ```
 
-### Add the assertions in the main process only
+#### Add the assertions in the main process only
 If you want to add assertions to check that the benchmark tests work as expected, do it in the main process. You can use the `IsoBench.IfMaster(() => {})` callback that will run only if the process is the master process, to avoid unneeded allocations in the child processes.
 
 For example, like this:
