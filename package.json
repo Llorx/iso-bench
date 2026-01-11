@@ -1,6 +1,6 @@
 {
   "name": "iso-bench",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "description": "Small benchmark library focused in avoiding optimization/deoptimization pollution between tests by isolating them.",
   "types": "lib/types",
   "main": "lib/",
@@ -19,6 +19,11 @@
     "deoptimizations",
     "benny"
   ],
+  "sideEffects": false,
+  "private": false,
+  "publishConfig": {
+    "provenance": true
+  },
   "scripts": {
     "clean": "node -e \"(require('fs').rm||require('fs').rmdir)('lib', { recursive: true, force: true }, ()=>{});\"",
     "watch": "npm run clean && npx tsc --watch --inlineSourcemap",
@@ -28,7 +33,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/llorx/iso-bench"
+    "url": "git+https://github.com/Llorx/iso-bench.git"
   },
   "devDependencies": {
     "@types/node": "^22.15.29",
