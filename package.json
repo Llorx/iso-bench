@@ -15,9 +15,11 @@
     "pollution",
     "opt",
     "deopt",
+    "jit",
     "optimizations",
     "deoptimizations",
-    "benny"
+    "benny",
+    "tinybench"
   ],
   "sideEffects": false,
   "private": false,

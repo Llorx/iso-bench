@@ -506,3 +506,9 @@ bench.add("indexOf", (arr) => {
     .consoleLog()
     .run();
 ```
+
+## ⭐️ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Llorx/iso-bench&type=date&legend=top-left)](https://www.star-history.com/#Llorx/iso-bench&type=date&legend=top-left)
+
+Please consider giving a star, if you find this library useful 😊
